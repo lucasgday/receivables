@@ -1,4 +1,5 @@
 import { User } from "lucide-react";
+import { useState } from "react";
 
 const mockCustomers = [
   {
@@ -27,13 +28,62 @@ const mockCustomers = [
   },
 ];
 
-export const CustomerList = () => {
+type SortField = "name" | "outstanding" | "status";
+
+export const CustomerList = ({
+  onCustomerClick,
+}: {
+  onCustomerClick: (customer: typeof mockCustomers[0]) => void;
+}) => {
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [filter, setFilter] = useState("");
+
+  const sortCustomers = (customers: typeof mockCustomers) => {
+    return [...customers].sort((a, b) => {
+      if (sortField === "outstanding") {
+        const aValue = parseFloat(a[sortField].replace("$", "").replace(",", ""));
+        const bValue = parseFloat(b[sortField].replace("$", "").replace(",", ""));
+        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+      }
+      
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+      return sortDirection === "asc"
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
+    });
+  };
+
+  const filterCustomers = (customers: typeof mockCustomers) => {
+    if (!filter) return customers;
+    const lowercaseFilter = filter.toLowerCase();
+    return customers.filter(
+      (customer) =>
+        customer.name.toLowerCase().includes(lowercaseFilter) ||
+        customer.contact.toLowerCase().includes(lowercaseFilter) ||
+        customer.email.toLowerCase().includes(lowercaseFilter)
+    );
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const filteredAndSortedCustomers = sortCustomers(filterCustomers(mockCustomers));
+
   return (
     <div className="space-y-4">
-      {mockCustomers.map((customer) => (
+      {filteredAndSortedCustomers.map((customer) => (
         <div
           key={customer.id}
-          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+          onClick={() => onCustomerClick(customer)}
         >
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
