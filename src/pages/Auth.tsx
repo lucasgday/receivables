@@ -55,6 +55,7 @@ export default function Auth() {
             navigate("/");
           }
         } catch (error: any) {
+          console.error("Auth error:", error);
           toast.error(error.message || "Error processing authentication");
         } finally {
           setLoading(false);
@@ -78,9 +79,13 @@ export default function Auth() {
 
     try {
       if (isSignUp) {
+        // For signup, include the current URL as the redirect URL
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: window.location.origin
+          }
         });
         if (error) throw error;
         toast.success("Check your email for the confirmation link!");
@@ -94,6 +99,7 @@ export default function Auth() {
         toast.success("Successfully signed in!");
       }
     } catch (error: any) {
+      console.error("Auth submission error:", error);
       toast.error(error.message);
     } finally {
       setLoading(false);
