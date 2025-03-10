@@ -21,6 +21,50 @@ export default function Auth() {
   // Get the intended destination from location state, or default to "/"
   const from = location.state?.from?.pathname || "/";
   
+  // Handle hash parameters from email confirmation links
+  useEffect(() => {
+    // Check if the URL contains a hash with access_token (from email confirmation)
+    const handleHashParams = async () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
+      
+      if (accessToken && refreshToken) {
+        setLoading(true);
+        try {
+          // Set the session with the tokens from the URL
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          
+          if (error) throw error;
+          
+          // If successful, navigate to the home page and show a success message
+          if (data.session) {
+            // Clear the hash from the URL
+            window.history.replaceState(null, '', window.location.pathname);
+            
+            if (type === 'signup') {
+              toast.success("Your email has been confirmed! You are now signed in.");
+            } else {
+              toast.success("You are now signed in!");
+            }
+            
+            navigate("/");
+          }
+        } catch (error: any) {
+          toast.error(error.message || "Error processing authentication");
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    handleHashParams();
+  }, [navigate]);
+
   // If already authenticated, redirect to home or intended destination
   useEffect(() => {
     if (user) {
@@ -63,43 +107,49 @@ export default function Auth() {
           <CardTitle>{isSignUp ? "Create an account" : "Sign in"}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Loading..." : isSignUp ? "Sign up" : "Sign in"}
-            </Button>
-            <Button
-              type="button"
-              variant="link"
-              className="w-full"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp
-                ? "Already have an account? Sign in"
-                : "Don't have an account? Sign up"}
-            </Button>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Loading..." : isSignUp ? "Sign up" : "Sign in"}
+              </Button>
+              <Button
+                type="button"
+                variant="link"
+                className="w-full"
+                onClick={() => setIsSignUp(!isSignUp)}
+              >
+                {isSignUp
+                  ? "Already have an account? Sign in"
+                  : "Don't have an account? Sign up"}
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
