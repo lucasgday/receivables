@@ -1,4 +1,5 @@
-import { BarChart3, FileText, Home, Settings, Users } from "lucide-react";
+
+import { BarChart3, FileText, Home, LogOut, Settings, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Sidebar,
@@ -10,6 +11,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useAuth } from "./AuthProvider";
+import { Button } from "./ui/button";
 
 const menuItems = [
   {
@@ -40,6 +43,8 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
+  const { signOut } = useAuth();
+  
   return (
     <Sidebar>
       <SidebarContent>
@@ -58,6 +63,19 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start" 
+              onClick={signOut}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              <span>Logout</span>
+            </Button>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
