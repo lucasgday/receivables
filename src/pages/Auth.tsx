@@ -1,12 +1,13 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -14,6 +15,18 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  
+  // Get the intended destination from location state, or default to "/"
+  const from = location.state?.from?.pathname || "/";
+  
+  // If already authenticated, redirect to home or intended destination
+  useEffect(() => {
+    if (user) {
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +46,8 @@ export default function Auth() {
           password,
         });
         if (error) throw error;
-        navigate("/");
+        navigate(from, { replace: true });
+        toast.success("Successfully signed in!");
       }
     } catch (error: any) {
       toast.error(error.message);

@@ -7,7 +7,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   if (loading) {
-    return null;
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
 
   if (!user) {
