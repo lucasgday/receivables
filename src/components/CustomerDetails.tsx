@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -16,34 +17,62 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Tables } from "@/integrations/supabase/types";
 
-type Customer = {
-  id: number;
-  name: string;
-  contact: string;
-  email: string;
-  status: string;
-  outstanding: string;
-};
+type Customer = Tables<"customers">;
 
 export const CustomerDetails = ({
   customer,
   open,
   onOpenChange,
+  onCustomerUpdate,
 }: {
   customer: Customer | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCustomerUpdate?: () => void;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const form = useForm<Customer>({
     defaultValues: customer || undefined,
   });
 
-  const onSubmit = (data: Customer) => {
-    console.log("Updated customer:", data);
-    // Here you would typically update the customer data
-    setIsEditing(false);
+  // Update form values when customer changes
+  useState(() => {
+    if (customer) {
+      form.reset(customer);
+    }
+  });
+
+  const onSubmit = async (data: Customer) => {
+    if (!customer) return;
+    
+    try {
+      const { error } = await supabase
+        .from("customers")
+        .update({
+          name: data.name,
+          contact: data.contact,
+          email: data.email,
+          status: data.status,
+        })
+        .eq("id", customer.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Customer updated successfully");
+      setIsEditing(false);
+      if (onCustomerUpdate) {
+        onCustomerUpdate();
+      }
+    } catch (error) {
+      console.error("Error updating customer:", error);
+      toast.error("Failed to update customer");
+    }
   };
 
   if (!customer) return null;
@@ -106,6 +135,19 @@ export const CustomerDetails = ({
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <Button type="submit" className="mt-6">Save Changes</Button>
               </form>
             </Form>
@@ -125,11 +167,7 @@ export const CustomerDetails = ({
               </div>
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
-                <p className="mt-1">{customer.status}</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Outstanding Balance</h3>
-                <p className="mt-1">{customer.outstanding}</p>
+                <p className="mt-1">{customer.status || "Active"}</p>
               </div>
             </div>
           )}

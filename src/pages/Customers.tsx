@@ -15,10 +15,15 @@ const Customers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleCustomerClick = (customer: any) => {
     setSelectedCustomer(customer);
     setDetailsOpen(true);
+  };
+
+  const refreshCustomers = () => {
+    setRefreshTrigger(prev => prev + 1);
   };
 
   return (
@@ -50,7 +55,11 @@ const Customers = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <CustomerList onCustomerClick={handleCustomerClick} />
+                <CustomerList 
+                  onCustomerClick={handleCustomerClick} 
+                  searchQuery={searchQuery}
+                  refreshTrigger={refreshTrigger}
+                />
               </CardContent>
             </Card>
           </div>
@@ -59,12 +68,14 @@ const Customers = () => {
         <AddCustomerSheet
           open={addCustomerOpen}
           onOpenChange={setAddCustomerOpen}
+          onCustomerAdded={refreshCustomers}
         />
 
         <CustomerDetails
           customer={selectedCustomer}
           open={detailsOpen}
           onOpenChange={setDetailsOpen}
+          onCustomerUpdate={refreshCustomers}
         />
       </div>
     </SidebarProvider>

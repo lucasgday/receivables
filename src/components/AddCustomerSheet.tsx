@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -17,27 +18,75 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "./AuthProvider";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-type CustomerFormData = {
-  name: string;
-  contact: string;
-  email: string;
-};
+const customerSchema = z.object({
+  name: z.string().min(1, "Company name is required"),
+  contact: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')),
+});
+
+type CustomerFormData = z.infer<typeof customerSchema>;
 
 export const AddCustomerSheet = ({
   open,
   onOpenChange,
+  onCustomerAdded,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCustomerAdded?: () => void;
 }) => {
-  const form = useForm<CustomerFormData>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
+  
+  const form = useForm<CustomerFormData>({
+    resolver: zodResolver(customerSchema),
+    defaultValues: {
+      name: "",
+      contact: "",
+      email: "",
+    }
+  });
 
-  const onSubmit = (data: CustomerFormData) => {
-    console.log("Form submitted:", data);
-    // Here you would typically save the customer data
-    onOpenChange(false);
-    form.reset();
+  const onSubmit = async (data: CustomerFormData) => {
+    if (!user && !import.meta.env.DEV) {
+      toast.error("You must be logged in to add customers");
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      const { error } = await supabase.from("customers").insert({
+        name: data.name,
+        contact: data.contact || null,
+        email: data.email || null,
+        user_id: user?.id || "00000000-0000-0000-0000-000000000000", // Use a default ID for development
+        status: "Active",
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Customer added successfully");
+      onOpenChange(false);
+      form.reset();
+      
+      if (onCustomerAdded) {
+        onCustomerAdded();
+      }
+    } catch (error) {
+      console.error("Error adding customer:", error);
+      toast.error("Failed to add customer");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -98,7 +147,9 @@ export const AddCustomerSheet = ({
               >
                 Cancel
               </Button>
-              <Button type="submit">Add Customer</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Adding..." : "Add Customer"}
+              </Button>
             </div>
           </form>
         </Form>

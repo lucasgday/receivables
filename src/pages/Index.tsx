@@ -13,34 +13,76 @@ import { supabase } from "@/integrations/supabase/client";
 const Index = () => {
   const { user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [hasCustomers, setHasCustomers] = useState(true);
+  const [dashboardData, setDashboardData] = useState({
+    totalReceivables: 0,
+    openInvoices: 0,
+    activeCustomers: 0,
+    collectionRate: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user has any customers
+  // Fetch dashboard data
   useEffect(() => {
-    if (user) {
-      const checkUserData = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('customers')
-            .select('count')
-            .single();
-          
-          if (error) throw error;
-          
-          // If count is 0, show onboarding
-          if (!data || data.count === 0) {
-            setHasCustomers(false);
-            setShowOnboarding(true);
-          }
-        } catch (error) {
-          console.error("Error checking user data:", error);
-          // If there's an error (likely no customers table yet), show onboarding
+    const fetchDashboardData = async () => {
+      if (!user && !import.meta.env.DEV) return;
+
+      try {
+        // Get active customers count
+        const { data: customers, error: customersError } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("status", "Active");
+
+        if (customersError) throw customersError;
+
+        // Get invoices
+        const { data: invoices, error: invoicesError } = await supabase
+          .from("invoices")
+          .select("*");
+
+        if (invoicesError) throw invoicesError;
+
+        // Calculate total receivables (sum of unpaid invoices)
+        const unpaidInvoices = invoices.filter(
+          (inv) => inv.status !== "Paid" && inv.status !== "paid"
+        );
+        const totalReceivables = unpaidInvoices.reduce(
+          (sum, inv) => sum + Number(inv.amount),
+          0
+        );
+
+        // Calculate open invoices count
+        const openInvoices = unpaidInvoices.length;
+
+        // Calculate collection rate (paid invoices / total invoices)
+        const paidInvoices = invoices.filter(
+          (inv) => inv.status === "Paid" || inv.status === "paid"
+        );
+        const collectionRate = invoices.length > 0
+          ? Math.round((paidInvoices.length / invoices.length) * 100)
+          : 0;
+
+        setDashboardData({
+          totalReceivables,
+          openInvoices,
+          activeCustomers: customers.length,
+          collectionRate,
+        });
+
+        // Show onboarding if no customers
+        if (customers.length === 0) {
           setShowOnboarding(true);
         }
-      };
-      
-      checkUserData();
-    }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        // If there's an error, show onboarding
+        setShowOnboarding(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, [user]);
 
   return (
@@ -55,26 +97,42 @@ const Index = () => {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <StatsCard
                 title="Total Receivables"
-                value={hasCustomers ? "$24,500" : "$0"}
-                description={hasCustomers ? "+20.1% from last month" : "Add your first customer"}
+                value={isLoading ? "Loading..." : `$${dashboardData.totalReceivables.toLocaleString()}`}
+                description={
+                  dashboardData.totalReceivables === 0 && !isLoading
+                    ? "Add your first invoice"
+                    : "Unpaid invoices"
+                }
                 icon={<DollarSign className="h-4 w-4" />}
               />
               <StatsCard
                 title="Open Invoices"
-                value={hasCustomers ? "12" : "0"}
-                description={hasCustomers ? "4 overdue" : "Create your first invoice"}
+                value={isLoading ? "Loading..." : dashboardData.openInvoices.toString()}
+                description={
+                  dashboardData.openInvoices === 0 && !isLoading
+                    ? "Create your first invoice"
+                    : "Awaiting payment"
+                }
                 icon={<FileText className="h-4 w-4" />}
               />
               <StatsCard
                 title="Active Customers"
-                value={hasCustomers ? "48" : "0"}
-                description={hasCustomers ? "+2 this month" : "Add your first customer"}
+                value={isLoading ? "Loading..." : dashboardData.activeCustomers.toString()}
+                description={
+                  dashboardData.activeCustomers === 0 && !isLoading
+                    ? "Add your first customer"
+                    : "Customers in your database"
+                }
                 icon={<Users className="h-4 w-4" />}
               />
               <StatsCard
                 title="Collection Rate"
-                value={hasCustomers ? "92%" : "0%"}
-                description={hasCustomers ? "+5% from last month" : "Track your first payment"}
+                value={isLoading ? "Loading..." : `${dashboardData.collectionRate}%`}
+                description={
+                  dashboardData.collectionRate === 0 && !isLoading
+                    ? "Track your first payment"
+                    : "Of invoices paid"
+                }
                 icon={<ArrowUpRight className="h-4 w-4" />}
               />
             </div>

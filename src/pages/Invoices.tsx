@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import {
@@ -10,55 +10,116 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Plus, Search } from "lucide-react";
+import { FileText, MoreHorizontal, Plus, Search, Trash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tables } from "@/integrations/supabase/types";
 
-// Mock data for invoices
-const mockInvoices = [
-  {
-    id: 1,
-    invoiceNumber: "INV-001",
-    customer: "Acme Corp",
-    amount: "$5,000",
-    issueDate: "2023-06-01",
-    dueDate: "2023-07-01",
-    status: "Paid",
-  },
-  {
-    id: 2,
-    invoiceNumber: "INV-002",
-    customer: "TechStart Inc",
-    amount: "$3,200",
-    issueDate: "2023-06-15",
-    dueDate: "2023-07-15",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    invoiceNumber: "INV-003",
-    customer: "Global Solutions",
-    amount: "$7,500",
-    issueDate: "2023-06-20",
-    dueDate: "2023-07-20",
-    status: "Overdue",
-  },
-];
+type Invoice = Tables<"invoices"> & {
+  customers: {
+    name: string;
+  } | null;
+};
 
 const Invoices = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
   
-  // Filter invoices based on search query and active tab
-  const filteredInvoices = mockInvoices.filter((invoice) => {
-    const matchesSearch = 
-      invoice.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase());
+  const fetchInvoices = async () => {
+    if (!user && !import.meta.env.DEV) return;
+
+    setIsLoading(true);
+    try {
+      let query = supabase
+        .from("invoices")
+        .select(`
+          *,
+          customers (
+            name
+          )
+        `);
+
+      // Filter by status if not 'all'
+      if (activeTab !== "all") {
+        query = query.eq("status", activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      setInvoices(data || []);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      toast.error("Failed to load invoices");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [user, activeTab]);
+
+  const handleDeleteInvoice = async (invoiceId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     
-    if (activeTab === "all") return matchesSearch;
-    return matchesSearch && invoice.status.toLowerCase() === activeTab.toLowerCase();
+    if (!confirm("Are you sure you want to delete this invoice?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .delete()
+        .eq("id", invoiceId);
+
+      if (error) throw error;
+
+      setInvoices(invoices.filter(inv => inv.id !== invoiceId));
+      toast.success("Invoice deleted successfully");
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      toast.error("Failed to delete invoice");
+    }
+  };
+
+  // Filter invoices based on search query
+  const filteredInvoices = invoices.filter((invoice) => {
+    const searchTerms = [
+      invoice.invoice_number,
+      invoice.customers?.name,
+      invoice.status,
+    ];
+    
+    return searchTerms.some(term => 
+      term && term.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   });
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString();
+  };
 
   return (
     <SidebarProvider>
@@ -103,7 +164,11 @@ const Invoices = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredInvoices.length > 0 ? (
+                  {isLoading ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Loading invoices...</p>
+                    </div>
+                  ) : filteredInvoices.length > 0 ? (
                     filteredInvoices.map((invoice) => (
                       <div
                         key={invoice.id}
@@ -114,31 +179,44 @@ const Invoices = () => {
                             <FileText className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <h3 className="font-medium">{invoice.invoiceNumber}</h3>
-                            <p className="text-sm text-muted-foreground">{invoice.customer}</p>
+                            <h3 className="font-medium">{invoice.invoice_number}</h3>
+                            <p className="text-sm text-muted-foreground">{invoice.customers?.name || "Unknown customer"}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-8">
                           <div className="text-right">
                             <p className="text-sm font-medium">Amount</p>
-                            <p className="text-sm text-muted-foreground">{invoice.amount}</p>
+                            <p className="text-sm text-muted-foreground">{formatCurrency(Number(invoice.amount))}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-medium">Due Date</p>
-                            <p className="text-sm text-muted-foreground">{invoice.dueDate}</p>
+                            <p className="text-sm text-muted-foreground">{formatDate(invoice.due_date)}</p>
                           </div>
-                          <div>
+                          <div className="flex items-center gap-2">
                             <Badge
                               variant={
-                                invoice.status === "Paid"
+                                invoice.status === "Paid" || invoice.status === "paid"
                                   ? "default"
-                                  : invoice.status === "Pending"
+                                  : invoice.status === "Pending" || invoice.status === "pending"
                                   ? "secondary"
                                   : "destructive"
                               }
                             >
                               {invoice.status}
                             </Badge>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem onClick={(e) => handleDeleteInvoice(invoice.id, e)}>
+                                  <Trash className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
                       </div>
