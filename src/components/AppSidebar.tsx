@@ -1,5 +1,5 @@
 
-import { BarChart3, FileText, Home, LogOut, Settings, Users } from "lucide-react";
+import { FileText, Home, LogOut, Settings, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Sidebar,
@@ -24,11 +24,6 @@ const menuItems = [
     title: "Invoices",
     icon: FileText,
     url: "/invoices",
-  },
-  {
-    title: "Analytics",
-    icon: BarChart3,
-    url: "/analytics",
   },
   {
     title: "Customers",

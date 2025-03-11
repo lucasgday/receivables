@@ -8,6 +8,8 @@ import { AuthProvider } from "./components/AuthProvider";
 import { RequireAuth } from "./components/RequireAuth";
 import Index from "./pages/Index";
 import Customers from "./pages/Customers";
+import Invoices from "./pages/Invoices";
+import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 
 const queryClient = new QueryClient();
@@ -33,15 +35,7 @@ const App = () => (
               path="/invoices"
               element={
                 <RequireAuth>
-                  <Index />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <RequireAuth>
-                  <Index />
+                  <Invoices />
                 </RequireAuth>
               }
             />
@@ -57,7 +51,7 @@ const App = () => (
               path="/settings"
               element={
                 <RequireAuth>
-                  <Index />
+                  <Settings />
                 </RequireAuth>
               }
             />
