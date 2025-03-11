@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { useAuth } from "./AuthProvider";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
 
 const customerSchema = z.object({
   name: z.string().min(1, "Company name is required"),
@@ -43,6 +44,7 @@ export const AddCustomerSheet = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
@@ -57,12 +59,21 @@ export const AddCustomerSheet = ({
     setIsSubmitting(true);
     
     try {
+      // Check for authentication
+      if (!user && !import.meta.env.DEV) {
+        toast.error("You must be logged in to add customers");
+        setIsSubmitting(false);
+        navigate("/auth"); // Redirect to auth page
+        return;
+      }
+
       // Get the user ID, using a default for development if needed
       const userId = user?.id || (import.meta.env.DEV ? "00000000-0000-0000-0000-000000000000" : null);
       
       if (!userId) {
         toast.error("You must be logged in to add customers");
         setIsSubmitting(false);
+        navigate("/auth"); // Redirect to auth page
         return;
       }
 
@@ -79,9 +90,14 @@ export const AddCustomerSheet = ({
         
         if (error.code === "42501") {
           toast.error("Permission denied. Please check if you're properly logged in.");
+          // If in production and there's a permission error, attempt to redirect to auth
+          if (!import.meta.env.DEV) {
+            navigate("/auth");
+          }
         } else {
           toast.error(`Failed to add customer: ${error.message}`);
         }
+        setIsSubmitting(false);
         return;
       }
 
