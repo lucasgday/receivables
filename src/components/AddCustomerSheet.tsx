@@ -54,24 +54,35 @@ export const AddCustomerSheet = ({
   });
 
   const onSubmit = async (data: CustomerFormData) => {
-    if (!user && !import.meta.env.DEV) {
-      toast.error("You must be logged in to add customers");
-      return;
-    }
-
     setIsSubmitting(true);
     
     try {
+      // Get the user ID, using a default for development if needed
+      const userId = user?.id || (import.meta.env.DEV ? "00000000-0000-0000-0000-000000000000" : null);
+      
+      if (!userId) {
+        toast.error("You must be logged in to add customers");
+        setIsSubmitting(false);
+        return;
+      }
+
       const { error } = await supabase.from("customers").insert({
         name: data.name,
         contact: data.contact || null,
         email: data.email || null,
-        user_id: user?.id || "00000000-0000-0000-0000-000000000000", // Use a default ID for development
+        user_id: userId,
         status: "Active",
       });
 
       if (error) {
-        throw error;
+        console.error("Error adding customer:", error);
+        
+        if (error.code === "42501") {
+          toast.error("Permission denied. Please check if you're properly logged in.");
+        } else {
+          toast.error(`Failed to add customer: ${error.message}`);
+        }
+        return;
       }
 
       toast.success("Customer added successfully");
