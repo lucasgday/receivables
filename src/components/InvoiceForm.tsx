@@ -35,21 +35,45 @@ export const InvoiceForm = ({
   customerId?: string;
   invoice?: Invoice;
 }) => {
-  const { createInvoice, isLoading } = useInvoiceActions();
+  const { createInvoice, updateInvoice, isLoading } = useInvoiceActions();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [showPaymentDate, setShowPaymentDate] = useState(invoice?.status === "Paid" || false);
+
+  const defaultValues = invoice || {
+    customer_id: customerId || "",
+    status: "Pending",
+    amount: 0,
+    issued_date: new Date().toISOString().split('T')[0],
+    due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    invoice_number: `INV-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+    notes: "",
+    category_id: "",
+    paid_date: "",
+  };
+
+  // Convert paid_date to string format for the form
+  if (invoice?.paid_date) {
+    defaultValues.paid_date = new Date(invoice.paid_date).toISOString().split('T')[0];
+  }
 
   const form = useForm<any>({
-    defaultValues: invoice || {
-      customer_id: customerId || "",
-      status: "Pending",
-      amount: 0,
-      issued_date: new Date().toISOString().split('T')[0],
-      due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      invoice_number: `INV-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
-      notes: ""
-    },
+    defaultValues,
   });
+
+  // Watch the status field to show/hide payment date
+  const watchedStatus = form.watch("status");
+  
+  useEffect(() => {
+    setShowPaymentDate(watchedStatus === "Paid");
+    
+    // If status is set to Paid and there's no paid_date, set it to today
+    if (watchedStatus === "Paid" && !form.getValues("paid_date")) {
+      form.setValue("paid_date", new Date().toISOString().split('T')[0]);
+    }
+  }, [watchedStatus, form]);
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -69,11 +93,40 @@ export const InvoiceForm = ({
       }
     };
 
+    const fetchCategories = async () => {
+      setIsLoadingCategories(true);
+      try {
+        const { data, error } = await supabase
+          .from("categories")
+          .select("*")
+          .order("name");
+
+        if (error) throw error;
+        setCategories(data || []);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
     fetchCustomers();
+    fetchCategories();
   }, []);
 
   const onSubmit = async (data: any) => {
-    const result = await createInvoice(data);
+    // Handle empty paid_date when status is not Paid
+    if (data.status !== "Paid") {
+      data.paid_date = null;
+    }
+    
+    let result;
+    if (invoice) {
+      result = await updateInvoice(invoice.id, data);
+    } else {
+      result = await createInvoice(data);
+    }
+    
     if (result && onSuccess) {
       onSuccess();
     }
@@ -126,6 +179,36 @@ export const InvoiceForm = ({
             )}
           />
         )}
+        
+        <FormField
+          control={form.control}
+          name="category_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <Select
+                disabled={isLoadingCategories}
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category (optional)" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="">No category</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
         <FormField
           control={form.control}
@@ -198,6 +281,27 @@ export const InvoiceForm = ({
           )}
         />
         
+        {showPaymentDate && (
+          <FormField
+            control={form.control}
+            name="paid_date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Payment Date</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="date" 
+                    {...field} 
+                    required={watchedStatus === "Paid"}
+                    value={field.value || ""} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+        
         <FormField
           control={form.control}
           name="notes"
@@ -213,7 +317,9 @@ export const InvoiceForm = ({
         />
         
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Creating Invoice..." : "Create Invoice"}
+          {isLoading 
+            ? (invoice ? "Updating Invoice..." : "Creating Invoice...") 
+            : (invoice ? "Update Invoice" : "Create Invoice")}
         </Button>
       </form>
     </Form>

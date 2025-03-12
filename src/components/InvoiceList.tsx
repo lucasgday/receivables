@@ -1,6 +1,6 @@
 
-import React from "react";
-import { FileText, MoreHorizontal, Trash } from "lucide-react";
+import React, { useState } from "react";
+import { FileText, MoreHorizontal, Trash, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Tables } from "@/integrations/supabase/types";
+import { EditInvoiceSheet } from "./EditInvoiceSheet";
 
 type Invoice = Tables<"invoices"> & {
   customers: {
@@ -21,9 +22,18 @@ interface InvoiceListProps {
   invoices: Invoice[];
   isLoading: boolean;
   handleDeleteInvoice: (invoiceId: string, e: React.MouseEvent) => Promise<void>;
+  refreshInvoices: () => void;
 }
 
-export const InvoiceList = ({ invoices, isLoading, handleDeleteInvoice }: InvoiceListProps) => {
+export const InvoiceList = ({ 
+  invoices, 
+  isLoading, 
+  handleDeleteInvoice,
+  refreshInvoices
+}: InvoiceListProps) => {
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -33,6 +43,12 @@ export const InvoiceList = ({ invoices, isLoading, handleDeleteInvoice }: Invoic
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString();
+  };
+
+  const handleEditInvoice = (invoice: Invoice, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingInvoice(invoice);
+    setEditSheetOpen(true);
   };
 
   if (isLoading) {
@@ -95,6 +111,10 @@ export const InvoiceList = ({ invoices, isLoading, handleDeleteInvoice }: Invoic
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                  <DropdownMenuItem onClick={(e) => handleEditInvoice(invoice, e)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={(e) => handleDeleteInvoice(invoice.id, e)}>
                     <Trash className="h-4 w-4 mr-2" />
                     Delete
@@ -105,6 +125,13 @@ export const InvoiceList = ({ invoices, isLoading, handleDeleteInvoice }: Invoic
           </div>
         </div>
       ))}
+
+      <EditInvoiceSheet
+        open={editSheetOpen}
+        onOpenChange={setEditSheetOpen}
+        invoice={editingInvoice}
+        onInvoiceUpdated={refreshInvoices}
+      />
     </div>
   );
 };

@@ -72,7 +72,8 @@ const Invoices = () => {
                 <InvoiceList 
                   invoices={filteredInvoices} 
                   isLoading={isLoading} 
-                  handleDeleteInvoice={handleDeleteInvoice} 
+                  handleDeleteInvoice={handleDeleteInvoice}
+                  refreshInvoices={refreshInvoices} 
                 />
               </CardContent>
             </Card>

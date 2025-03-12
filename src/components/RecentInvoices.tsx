@@ -19,6 +19,9 @@ type Invoice = Tables<"invoices"> & {
   customers: {
     name: string;
   } | null;
+  categories: {
+    name: string;
+  } | null;
 };
 
 const statusStyles = {
@@ -46,6 +49,9 @@ export function RecentInvoices() {
           .select(`
             *,
             customers (
+              name
+            ),
+            categories (
               name
             )
           `)
@@ -114,6 +120,7 @@ export function RecentInvoices() {
             <TableRow>
               <TableHead>Invoice</TableHead>
               <TableHead>Customer</TableHead>
+              <TableHead>Category</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Date</TableHead>
@@ -124,6 +131,7 @@ export function RecentInvoices() {
               <TableRow key={invoice.id}>
                 <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
                 <TableCell>{invoice.customers?.name || "Unknown"}</TableCell>
+                <TableCell>{invoice.categories?.name || "Uncategorized"}</TableCell>
                 <TableCell>{formatCurrency(Number(invoice.amount))}</TableCell>
                 <TableCell>
                   <Badge
@@ -133,7 +141,11 @@ export function RecentInvoices() {
                     {invoice.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{formatDate(invoice.issued_date)}</TableCell>
+                <TableCell>
+                  {invoice.status === "Paid" && invoice.paid_date
+                    ? `Paid on ${formatDate(invoice.paid_date)}`
+                    : formatDate(invoice.due_date)}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

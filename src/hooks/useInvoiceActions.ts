@@ -38,8 +38,37 @@ export const useInvoiceActions = () => {
     }
   };
 
+  const updateInvoice = async (invoiceId: string, invoiceData: any) => {
+    if (!user && !import.meta.env.DEV) {
+      toast.error("You must be logged in to update an invoice");
+      return null;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("invoices")
+        .update(invoiceData)
+        .eq("id", invoiceId)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Invoice updated successfully");
+      return data;
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      toast.error("Failed to update invoice");
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     createInvoice,
+    updateInvoice,
     isLoading
   };
 };

@@ -8,6 +8,9 @@ export type Invoice = Tables<"invoices"> & {
   customers: {
     name: string;
   } | null;
+  categories: {
+    name: string;
+  } | null;
 };
 
 export const useInvoices = (user: any, activeTab: string, customerId?: string) => {
@@ -24,6 +27,9 @@ export const useInvoices = (user: any, activeTab: string, customerId?: string) =
         .select(`
           *,
           customers (
+            name
+          ),
+          categories (
             name
           )
         `);
