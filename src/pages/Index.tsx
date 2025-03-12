@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -9,6 +8,9 @@ import { ArrowUpRight, DollarSign, FileText, Users } from "lucide-react";
 import { Onboarding } from "@/components/Onboarding";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { AddCustomerSheet } from "@/components/AddCustomerSheet";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const { user } = useAuth();
@@ -20,14 +22,14 @@ const Index = () => {
     collectionRate: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const navigate = useNavigate();
 
-  // Fetch dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!user && !import.meta.env.DEV) return;
 
       try {
-        // Get active customers count
         const { data: customers, error: customersError } = await supabase
           .from("customers")
           .select("id")
@@ -35,14 +37,12 @@ const Index = () => {
 
         if (customersError) throw customersError;
 
-        // Get invoices
         const { data: invoices, error: invoicesError } = await supabase
           .from("invoices")
           .select("*");
 
         if (invoicesError) throw invoicesError;
 
-        // Calculate total receivables (sum of unpaid invoices)
         const unpaidInvoices = invoices.filter(
           (inv) => inv.status !== "Paid" && inv.status !== "paid"
         );
@@ -51,10 +51,8 @@ const Index = () => {
           0
         );
 
-        // Calculate open invoices count
         const openInvoices = unpaidInvoices.length;
 
-        // Calculate collection rate (paid invoices / total invoices)
         const paidInvoices = invoices.filter(
           (inv) => inv.status === "Paid" || inv.status === "paid"
         );
@@ -69,13 +67,11 @@ const Index = () => {
           collectionRate,
         });
 
-        // Show onboarding if no customers
         if (customers.length === 0) {
           setShowOnboarding(true);
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        // If there's an error, show onboarding
         setShowOnboarding(true);
       } finally {
         setIsLoading(false);
@@ -92,7 +88,17 @@ const Index = () => {
         <main className="flex-1 p-8">
           <SidebarTrigger className="mb-4" />
           <div className="space-y-8">
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl font-bold">Dashboard</h1>
+              <div className="space-x-2">
+                <Button onClick={() => setAddCustomerOpen(true)}>
+                  Add Customer
+                </Button>
+                <Button onClick={() => navigate("/invoices")}>
+                  New Invoice
+                </Button>
+              </div>
+            </div>
             
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <StatsCard
@@ -144,6 +150,15 @@ const Index = () => {
             <RecentInvoices />
           </div>
         </main>
+        
+        <AddCustomerSheet
+          open={addCustomerOpen}
+          onOpenChange={setAddCustomerOpen}
+          onCustomerAdded={() => {
+            setAddCustomerOpen(false);
+            fetchDashboardData();
+          }}
+        />
         
         {showOnboarding && (
           <Onboarding onComplete={() => setShowOnboarding(false)} />

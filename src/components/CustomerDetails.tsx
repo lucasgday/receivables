@@ -7,7 +7,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Form,
@@ -20,8 +20,11 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tables } from "@/integrations/supabase/types";
+import { FileText, Plus, Trash } from "lucide-react";
+import { Badge } from "./ui/badge";
 
 type Customer = Tables<"customers">;
+type Invoice = Tables<"invoices">;
 
 export const CustomerDetails = ({
   customer,
@@ -35,6 +38,8 @@ export const CustomerDetails = ({
   onCustomerUpdate?: () => void;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [isLoadingInvoices, setIsLoadingInvoices] = useState(true);
   const form = useForm<Customer>({
     defaultValues: customer || undefined,
   });
@@ -45,6 +50,31 @@ export const CustomerDetails = ({
       form.reset(customer);
     }
   });
+
+  // Fetch customer's invoices
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      if (!customer) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("invoices")
+          .select("*")
+          .eq("customer_id", customer.id)
+          .order("issued_date", { ascending: false });
+
+        if (error) throw error;
+        setInvoices(data);
+      } catch (error) {
+        console.error("Error fetching invoices:", error);
+        toast.error("Failed to load invoices");
+      } finally {
+        setIsLoadingInvoices(false);
+      }
+    };
+
+    fetchInvoices();
+  }, [customer]);
 
   const onSubmit = async (data: Customer) => {
     if (!customer) return;
@@ -60,9 +90,7 @@ export const CustomerDetails = ({
         })
         .eq("id", customer.id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast.success("Customer updated successfully");
       setIsEditing(false);
@@ -75,20 +103,58 @@ export const CustomerDetails = ({
     }
   };
 
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    if (!confirm("Are you sure you want to delete this invoice?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .delete()
+        .eq("id", invoiceId);
+
+      if (error) throw error;
+
+      setInvoices(invoices.filter(inv => inv.id !== invoiceId));
+      toast.success("Invoice deleted successfully");
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      toast.error("Failed to delete invoice");
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString();
+  };
+
   if (!customer) return null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-2xl">
+      <SheetContent className="sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex justify-between items-center">
             <span>Customer Details</span>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              {isEditing ? "Cancel Edit" : "Edit"}
-            </Button>
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                {isEditing ? "Cancel Edit" : "Edit"}
+              </Button>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Invoice
+              </Button>
+            </div>
           </SheetTitle>
         </SheetHeader>
 
@@ -152,24 +218,78 @@ export const CustomerDetails = ({
               </form>
             </Form>
           ) : (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Company Name</h3>
-                <p className="mt-1">{customer.name}</p>
+            <>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Company Name</h3>
+                  <p className="mt-1">{customer.name}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Contact Person</h3>
+                  <p className="mt-1">{customer.contact}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
+                  <p className="mt-1">{customer.email}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
+                  <p className="mt-1">{customer.status || "Active"}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Contact Person</h3>
-                <p className="mt-1">{customer.contact}</p>
+
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-4">Invoices</h3>
+                {isLoadingInvoices ? (
+                  <p className="text-muted-foreground">Loading invoices...</p>
+                ) : invoices.length === 0 ? (
+                  <p className="text-muted-foreground">No invoices found</p>
+                ) : (
+                  <div className="space-y-4">
+                    {invoices.map((invoice) => (
+                      <div
+                        key={invoice.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <FileText className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{invoice.invoice_number}</h3>
+                            <p className="text-sm text-muted-foreground">Due: {formatDate(invoice.due_date)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-sm font-medium">Amount</p>
+                            <p className="text-sm text-muted-foreground">{formatCurrency(Number(invoice.amount))}</p>
+                          </div>
+                          <Badge
+                            variant={
+                              invoice.status === "Paid" || invoice.status === "paid"
+                                ? "default"
+                                : invoice.status === "Pending" || invoice.status === "pending"
+                                ? "secondary"
+                                : "destructive"
+                            }
+                          >
+                            {invoice.status}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteInvoice(invoice.id)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
-                <p className="mt-1">{customer.email}</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
-                <p className="mt-1">{customer.status || "Active"}</p>
-              </div>
-            </div>
+            </>
           )}
         </div>
       </SheetContent>
