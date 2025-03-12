@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { StatsCard } from "@/components/StatsCard";
@@ -25,61 +26,62 @@ const Index = () => {
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!user && !import.meta.env.DEV) return;
+  const fetchDashboardData = useCallback(async () => {
+    if (!user && !import.meta.env.DEV) return;
 
-      try {
-        const { data: customers, error: customersError } = await supabase
-          .from("customers")
-          .select("id")
-          .eq("status", "Active");
+    setIsLoading(true);
+    try {
+      const { data: customers, error: customersError } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("status", "Active");
 
-        if (customersError) throw customersError;
+      if (customersError) throw customersError;
 
-        const { data: invoices, error: invoicesError } = await supabase
-          .from("invoices")
-          .select("*");
+      const { data: invoices, error: invoicesError } = await supabase
+        .from("invoices")
+        .select("*");
 
-        if (invoicesError) throw invoicesError;
+      if (invoicesError) throw invoicesError;
 
-        const unpaidInvoices = invoices.filter(
-          (inv) => inv.status !== "Paid" && inv.status !== "paid"
-        );
-        const totalReceivables = unpaidInvoices.reduce(
-          (sum, inv) => sum + Number(inv.amount),
-          0
-        );
+      const unpaidInvoices = invoices.filter(
+        (inv) => inv.status !== "Paid" && inv.status !== "paid"
+      );
+      const totalReceivables = unpaidInvoices.reduce(
+        (sum, inv) => sum + Number(inv.amount),
+        0
+      );
 
-        const openInvoices = unpaidInvoices.length;
+      const openInvoices = unpaidInvoices.length;
 
-        const paidInvoices = invoices.filter(
-          (inv) => inv.status === "Paid" || inv.status === "paid"
-        );
-        const collectionRate = invoices.length > 0
-          ? Math.round((paidInvoices.length / invoices.length) * 100)
-          : 0;
+      const paidInvoices = invoices.filter(
+        (inv) => inv.status === "Paid" || inv.status === "paid"
+      );
+      const collectionRate = invoices.length > 0
+        ? Math.round((paidInvoices.length / invoices.length) * 100)
+        : 0;
 
-        setDashboardData({
-          totalReceivables,
-          openInvoices,
-          activeCustomers: customers.length,
-          collectionRate,
-        });
+      setDashboardData({
+        totalReceivables,
+        openInvoices,
+        activeCustomers: customers.length,
+        collectionRate,
+      });
 
-        if (customers.length === 0) {
-          setShowOnboarding(true);
-        }
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+      if (customers.length === 0) {
         setShowOnboarding(true);
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    fetchDashboardData();
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      setShowOnboarding(true);
+    } finally {
+      setIsLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   return (
     <SidebarProvider>
