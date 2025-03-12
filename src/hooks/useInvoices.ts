@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tables } from "@/integrations/supabase/types";
@@ -10,11 +10,11 @@ export type Invoice = Tables<"invoices"> & {
   } | null;
 };
 
-export const useInvoices = (user: any, activeTab: string) => {
+export const useInvoices = (user: any, activeTab: string, customerId?: string) => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     if (!user && !import.meta.env.DEV) return;
 
     setIsLoading(true);
@@ -33,6 +33,11 @@ export const useInvoices = (user: any, activeTab: string) => {
         query = query.eq("status", activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
       }
 
+      // Filter by customer if customerId is provided
+      if (customerId) {
+        query = query.eq("customer_id", customerId);
+      }
+
       const { data, error } = await query;
 
       if (error) throw error;
@@ -44,7 +49,7 @@ export const useInvoices = (user: any, activeTab: string) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, activeTab, customerId]);
 
   const handleDeleteInvoice = async (invoiceId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -69,13 +74,18 @@ export const useInvoices = (user: any, activeTab: string) => {
     }
   };
 
+  const refreshInvoices = () => {
+    fetchInvoices();
+  };
+
   useEffect(() => {
     fetchInvoices();
-  }, [user, activeTab]);
+  }, [fetchInvoices]);
 
   return {
     invoices,
     isLoading,
     handleDeleteInvoice,
+    refreshInvoices,
   };
 };

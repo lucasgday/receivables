@@ -10,13 +10,21 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { Tables } from "@/integrations/supabase/types";
-import { useAuth } from "./AuthProvider";
-import { useNavigate } from "react-router-dom";
+import { useInvoiceActions } from "@/hooks/useInvoiceActions";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Invoice = Tables<"invoices">;
+type Customer = Tables<"customers">;
 
 export const InvoiceForm = ({
   onSuccess,
@@ -27,55 +35,47 @@ export const InvoiceForm = ({
   customerId?: string;
   invoice?: Invoice;
 }) => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const form = useForm<Invoice>({
+  const { createInvoice, isLoading } = useInvoiceActions();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
+
+  const form = useForm<any>({
     defaultValues: invoice || {
-      customer_id: customerId,
+      customer_id: customerId || "",
       status: "Pending",
+      amount: 0,
+      issued_date: new Date().toISOString().split('T')[0],
+      due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      invoice_number: `INV-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      notes: ""
     },
   });
 
-  const onSubmit = async (data: any) => {
-    if (!user && !import.meta.env.DEV) {
-      navigate("/auth");
-      return;
-    }
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      setIsLoadingCustomers(true);
+      try {
+        const { data, error } = await supabase
+          .from("customers")
+          .select("*")
+          .eq("status", "Active");
 
-    try {
-      const { error } = invoice
-        ? await supabase
-            .from("invoices")
-            .update({
-              amount: data.amount,
-              invoice_number: data.invoice_number,
-              issued_date: data.issued_date,
-              due_date: data.due_date,
-              status: data.status,
-              notes: data.notes,
-            })
-            .eq("id", invoice.id)
-        : await supabase
-            .from("invoices")
-            .insert({
-              ...data,
-              user_id: user?.id || "00000000-0000-0000-0000-000000000000",
-            });
-
-      if (error) {
-        if (error.code === "42501") {
-          // Permission denied error
-          navigate("/auth");
-          return;
-        }
-        throw error;
+        if (error) throw error;
+        setCustomers(data || []);
+      } catch (error) {
+        console.error("Error fetching customers:", error);
+      } finally {
+        setIsLoadingCustomers(false);
       }
+    };
 
-      toast.success(invoice ? "Invoice updated successfully" : "Invoice created successfully");
-      if (onSuccess) onSuccess();
-    } catch (error) {
-      console.error("Error saving invoice:", error);
-      toast.error("Failed to save invoice");
+    fetchCustomers();
+  }, []);
+
+  const onSubmit = async (data: any) => {
+    const result = await createInvoice(data);
+    if (result && onSuccess) {
+      onSuccess();
     }
   };
 
@@ -95,12 +95,44 @@ export const InvoiceForm = ({
             </FormItem>
           )}
         />
+        
+        {!customerId && (
+          <FormField
+            control={form.control}
+            name="customer_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Customer</FormLabel>
+                <Select
+                  disabled={isLoadingCustomers}
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a customer" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+        
         <FormField
           control={form.control}
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount</FormLabel>
+              <FormLabel>Amount ($)</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -114,6 +146,7 @@ export const InvoiceForm = ({
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="issued_date"
@@ -127,6 +160,7 @@ export const InvoiceForm = ({
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="due_date"
@@ -140,26 +174,30 @@ export const InvoiceForm = ({
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="status"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Status</FormLabel>
-              <FormControl>
-                <select
-                  {...field}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Overdue">Overdue</option>
-                </select>
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Paid">Paid</SelectItem>
+                  <SelectItem value="Overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="notes"
@@ -167,14 +205,15 @@ export const InvoiceForm = ({
             <FormItem>
               <FormLabel>Notes</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Textarea {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">
-          {invoice ? "Update Invoice" : "Create Invoice"}
+        
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Creating Invoice..." : "Create Invoice"}
         </Button>
       </form>
     </Form>
