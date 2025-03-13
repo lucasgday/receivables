@@ -41,21 +41,28 @@ export function CategoryForm({
 
     setIsLoading(true);
     try {
-      const action = categoryToEdit ? "update" : "insert";
-      const query = supabase.from("categories")[action](
-        {
-          ...data,
-          user_id: user?.id || "00000000-0000-0000-0000-000000000000",
-          ...(categoryToEdit && { id: categoryToEdit.id })
-        }
-      );
-
-      if (action === "update") {
-        query.eq("id", categoryToEdit.id);
+      if (categoryToEdit) {
+        // Update existing category
+        const { error } = await supabase
+          .from("categories")
+          .update({
+            ...data,
+            user_id: user?.id || "00000000-0000-0000-0000-000000000000"
+          })
+          .eq("id", categoryToEdit.id);
+        
+        if (error) throw error;
+      } else {
+        // Insert new category
+        const { error } = await supabase
+          .from("categories")
+          .insert({
+            ...data,
+            user_id: user?.id || "00000000-0000-0000-0000-000000000000"
+          });
+        
+        if (error) throw error;
       }
-
-      const { error } = await query;
-      if (error) throw error;
 
       toast.success(`Category ${categoryToEdit ? "updated" : "created"} successfully`);
       if (onSuccess) onSuccess();

@@ -1,3 +1,4 @@
+
 import {
   Sheet,
   SheetContent,
@@ -6,14 +7,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Sidebar, SidebarClose, SidebarContent, SidebarTrigger } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "./AuthProvider";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { signOut } from "firebase/auth";
-import { auth } from "@/integrations/firebase/client";
 import { toast } from "sonner";
 // Add the FolderTag icon import
 import { 
@@ -27,9 +26,20 @@ import {
 } from "lucide-react";
 
 export function AppSidebar() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success("Signed out successfully");
+      navigate("/auth");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out");
+    }
+  };
 
   return (
     <Sidebar className="border-r hidden @sidebar:flex flex-col flex-grow">
@@ -93,11 +103,11 @@ export function AppSidebar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="w-full justify-start gap-2">
               <Avatar className="size-7">
-                <AvatarImage src={user?.photoURL || ""} />
+                <AvatarImage src={user?.email ? undefined : ""} />
                 <AvatarFallback>{user?.email?.[0]?.toUpperCase() || "U"}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col text-left leading-none">
-                <span className="font-medium">{user?.displayName || user?.email}</span>
+                <span className="font-medium">{user?.email || "User"}</span>
                 <span className="text-muted-foreground text-sm">{user?.email}</span>
               </div>
             </Button>
@@ -107,16 +117,7 @@ export function AppSidebar() {
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={async () => {
-              try {
-                await signOut(auth);
-                toast.success("Signed out successfully");
-                navigate("/auth");
-              } catch (error) {
-                console.error("Error signing out:", error);
-                toast.error("Failed to sign out");
-              }
-            }}
+            <DropdownMenuItem onClick={handleSignOut}
             className="text-destructive focus:text-destructive"
             >
               Sign out

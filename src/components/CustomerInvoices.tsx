@@ -31,6 +31,7 @@ export function CustomerInvoices({ customerId }: CustomerInvoicesProps) {
           invoices={invoices} 
           isLoading={isLoading} 
           handleDeleteInvoice={handleDeleteInvoice}
+          refreshInvoices={refreshInvoices}
         />
       </CardContent>
 
