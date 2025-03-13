@@ -92,10 +92,12 @@ export type Database = {
           amount: number
           category_id: string | null
           created_at: string | null
+          currency: string | null
           customer_id: string
           due_date: string
           id: string
           invoice_number: string
+          invoicing_company: string | null
           issued_date: string
           notes: string | null
           paid_date: string | null
@@ -107,10 +109,12 @@ export type Database = {
           amount: number
           category_id?: string | null
           created_at?: string | null
+          currency?: string | null
           customer_id: string
           due_date: string
           id?: string
           invoice_number: string
+          invoicing_company?: string | null
           issued_date: string
           notes?: string | null
           paid_date?: string | null
@@ -122,10 +126,12 @@ export type Database = {
           amount?: number
           category_id?: string | null
           created_at?: string | null
+          currency?: string | null
           customer_id?: string
           due_date?: string
           id?: string
           invoice_number?: string
+          invoicing_company?: string | null
           issued_date?: string
           notes?: string | null
           paid_date?: string | null
@@ -196,6 +202,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_settings: {
+        Row: {
+          created_at: string | null
+          default_company: string | null
+          default_currency: string
+          id: string
+          show_company: boolean
+          show_currency: boolean
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          default_company?: string | null
+          default_currency?: string
+          id?: string
+          show_company?: boolean
+          show_currency?: boolean
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          default_company?: string | null
+          default_currency?: string
+          id?: string
+          show_company?: boolean
+          show_currency?: boolean
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

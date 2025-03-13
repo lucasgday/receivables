@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { FileText, MoreHorizontal, Trash, Edit } from "lucide-react";
+import { FileText, MoreHorizontal, Trash, Edit, FileDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -11,9 +11,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tables } from "@/integrations/supabase/types";
 import { EditInvoiceSheet } from "./EditInvoiceSheet";
+import { useSettings } from "@/hooks/useSettings";
 
 type Invoice = Tables<"invoices"> & {
   customers: {
+    name: string;
+  } | null;
+  categories: {
     name: string;
   } | null;
 };
@@ -33,11 +37,13 @@ export const InvoiceList = ({
 }: InvoiceListProps) => {
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const { settings } = useSettings();
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number, currency?: string) => {
+    const currencyCode = currency || "USD";
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: currencyCode,
     }).format(amount);
   };
 
@@ -49,6 +55,11 @@ export const InvoiceList = ({
     e.stopPropagation();
     setEditingInvoice(invoice);
     setEditSheetOpen(true);
+  };
+
+  const handleGeneratePdf = (invoiceId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(`/invoice-pdf/${invoiceId}`, '_blank');
   };
 
   if (isLoading) {
@@ -81,12 +92,20 @@ export const InvoiceList = ({
             <div>
               <h3 className="font-medium">{invoice.invoice_number}</h3>
               <p className="text-sm text-muted-foreground">{invoice.customers?.name || "Unknown customer"}</p>
+              {settings?.show_company && invoice.invoicing_company && (
+                <p className="text-xs text-muted-foreground">From: {invoice.invoicing_company}</p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-8">
             <div className="text-right">
               <p className="text-sm font-medium">Amount</p>
-              <p className="text-sm text-muted-foreground">{formatCurrency(Number(invoice.amount))}</p>
+              <p className="text-sm text-muted-foreground">
+                {settings?.show_currency 
+                  ? formatCurrency(Number(invoice.amount), invoice.currency)
+                  : formatCurrency(Number(invoice.amount))
+                }
+              </p>
             </div>
             <div className="text-right">
               <p className="text-sm font-medium">Due Date</p>
@@ -114,6 +133,10 @@ export const InvoiceList = ({
                   <DropdownMenuItem onClick={(e) => handleEditInvoice(invoice, e)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => handleGeneratePdf(invoice.id, e)}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Generate PDF
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={(e) => handleDeleteInvoice(invoice.id, e)}>
                     <Trash className="h-4 w-4 mr-2" />

@@ -10,8 +10,9 @@ import Invoices from "./pages/Invoices";
 import Customers from "./pages/Customers";
 import Settings from "./pages/Settings";
 
-// Import the new Categories page
+// Import the new Components
 import Categories from "./pages/Categories";
+import { InvoicePDF } from "./components/InvoicePDF";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ function App() {
             <Route path="/categories" element={<RequireAuth><Categories /></RequireAuth>} />
             <Route path="/customers" element={<RequireAuth><Customers /></RequireAuth>} />
             <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
+            <Route path="/invoice-pdf/:id" element={<RequireAuth><InvoicePDF /></RequireAuth>} />
           </Routes>
         </AuthProvider>
       </Router>

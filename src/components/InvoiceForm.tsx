@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSettings } from "@/hooks/useSettings";
 
 type Invoice = Tables<"invoices">;
 type Customer = Tables<"customers">;
@@ -36,6 +37,7 @@ export const InvoiceForm = ({
   invoice?: Invoice;
 }) => {
   const { createInvoice, updateInvoice, isLoading } = useInvoiceActions();
+  const { settings } = useSettings();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
@@ -52,6 +54,8 @@ export const InvoiceForm = ({
     notes: "",
     category_id: "",
     paid_date: "",
+    currency: settings?.default_currency || "USD",
+    invoicing_company: settings?.default_company || "",
   };
 
   // Convert paid_date to string format for the form
@@ -74,6 +78,14 @@ export const InvoiceForm = ({
       form.setValue("paid_date", new Date().toISOString().split('T')[0]);
     }
   }, [watchedStatus, form]);
+
+  // Set default values from settings when settings loaded
+  useEffect(() => {
+    if (settings && !invoice) {
+      form.setValue("currency", settings.default_currency || "USD");
+      form.setValue("invoicing_company", settings.default_company || "");
+    }
+  }, [settings, form, invoice]);
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -180,6 +192,22 @@ export const InvoiceForm = ({
           />
         )}
         
+        {settings?.show_company && (
+          <FormField
+            control={form.control}
+            name="invoicing_company"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Invoicing Company</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Your Company Name" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+        
         <FormField
           control={form.control}
           name="category_id"
@@ -210,25 +238,43 @@ export const InvoiceForm = ({
           )}
         />
         
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Amount ($)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                  required
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+        <div className="flex gap-4">
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormLabel>Amount</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    {...field}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                    required
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {settings?.show_currency && (
+            <FormField
+              control={form.control}
+              name="currency"
+              render={({ field }) => (
+                <FormItem className="w-24">
+                  <FormLabel>Currency</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="USD" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           )}
-        />
+        </div>
         
         <FormField
           control={form.control}
@@ -316,11 +362,23 @@ export const InvoiceForm = ({
           )}
         />
         
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading 
-            ? (invoice ? "Updating Invoice..." : "Creating Invoice...") 
-            : (invoice ? "Update Invoice" : "Create Invoice")}
-        </Button>
+        <div className="flex gap-4">
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading 
+              ? (invoice ? "Updating Invoice..." : "Creating Invoice...") 
+              : (invoice ? "Update Invoice" : "Create Invoice")}
+          </Button>
+          
+          {invoice && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => window.open(`/invoice-pdf/${invoice.id}`, '_blank')}
+            >
+              Generate PDF
+            </Button>
+          )}
+        </div>
       </form>
     </Form>
   );

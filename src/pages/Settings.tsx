@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import {
@@ -18,14 +18,38 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
+import { useSettings } from "@/hooks/useSettings";
 
 const Settings = () => {
   const { user } = useAuth();
+  const { settings, isLoading, updateSettings } = useSettings();
   const [companyName, setCompanyName] = useState("My Company");
   const [email, setEmail] = useState(user?.email || "");
+  const [defaultCompany, setDefaultCompany] = useState("");
+  const [defaultCurrency, setDefaultCurrency] = useState("USD");
+  const [showCurrency, setShowCurrency] = useState(true);
+  const [showCompany, setShowCompany] = useState(true);
   
+  useEffect(() => {
+    if (settings) {
+      setDefaultCurrency(settings.default_currency || "USD");
+      setDefaultCompany(settings.default_company || "");
+      setShowCurrency(settings.show_currency);
+      setShowCompany(settings.show_company);
+    }
+  }, [settings]);
+
   const saveGeneralSettings = () => {
     toast.success("Settings saved successfully");
+  };
+
+  const saveInvoiceSettings = async () => {
+    await updateSettings({
+      default_currency: defaultCurrency,
+      default_company: defaultCompany,
+      show_currency: showCurrency,
+      show_company: showCompany,
+    });
   };
 
   return (
@@ -172,6 +196,58 @@ const Settings = () => {
                       <Input id="invoicePrefix" defaultValue="INV-" />
                     </div>
                     
+                    <div className="space-y-4 mt-6">
+                      <h3 className="text-lg font-medium">Invoice Fields</h3>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="showCurrency">Show Currency</Label>
+                          <p className="text-sm text-muted-foreground">Display currency on invoices</p>
+                        </div>
+                        <Switch 
+                          id="showCurrency" 
+                          checked={showCurrency}
+                          onCheckedChange={setShowCurrency}
+                        />
+                      </div>
+                      
+                      {showCurrency && (
+                        <div className="space-y-2 pl-6 border-l-2 border-muted ml-2">
+                          <Label htmlFor="defaultCurrency">Default Currency</Label>
+                          <Input 
+                            id="defaultCurrency" 
+                            value={defaultCurrency}
+                            onChange={(e) => setDefaultCurrency(e.target.value)}
+                            placeholder="USD"
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="showCompany">Show Invoicing Company</Label>
+                          <p className="text-sm text-muted-foreground">Display your company name on invoices</p>
+                        </div>
+                        <Switch 
+                          id="showCompany" 
+                          checked={showCompany}
+                          onCheckedChange={setShowCompany}
+                        />
+                      </div>
+                      
+                      {showCompany && (
+                        <div className="space-y-2 pl-6 border-l-2 border-muted ml-2">
+                          <Label htmlFor="defaultCompany">Default Company Name</Label>
+                          <Input 
+                            id="defaultCompany"
+                            value={defaultCompany}
+                            onChange={(e) => setDefaultCompany(e.target.value)}
+                            placeholder="Your Company Name"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    
                     <div className="flex items-center justify-between">
                       <div>
                         <Label htmlFor="automaticReminders">Automatic Reminders</Label>
@@ -181,7 +257,7 @@ const Settings = () => {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button onClick={() => toast.success("Invoice settings saved")}>Save Settings</Button>
+                    <Button onClick={saveInvoiceSettings}>Save Settings</Button>
                   </CardFooter>
                 </Card>
               </TabsContent>
