@@ -19,16 +19,19 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { useSettings } from "@/hooks/useSettings";
+import { useTheme } from "next-themes";
 
 const Settings = () => {
   const { user } = useAuth();
   const { settings, isLoading, updateSettings } = useSettings();
+  const { theme, setTheme } = useTheme();
   const [companyName, setCompanyName] = useState("My Company");
   const [email, setEmail] = useState(user?.email || "");
   const [defaultCompany, setDefaultCompany] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const [showCurrency, setShowCurrency] = useState(true);
   const [showCompany, setShowCompany] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   
   useEffect(() => {
     if (settings) {
@@ -37,7 +40,10 @@ const Settings = () => {
       setShowCurrency(settings.show_currency);
       setShowCompany(settings.show_company);
     }
-  }, [settings]);
+    
+    // Set the initial dark mode state based on the current theme
+    setIsDarkMode(theme === "dark");
+  }, [settings, theme]);
 
   const saveGeneralSettings = () => {
     toast.success("Settings saved successfully");
@@ -50,6 +56,11 @@ const Settings = () => {
       show_currency: showCurrency,
       show_company: showCompany,
     });
+  };
+  
+  const toggleDarkMode = (checked: boolean) => {
+    setIsDarkMode(checked);
+    setTheme(checked ? "dark" : "light");
   };
 
   return (
@@ -93,7 +104,11 @@ const Settings = () => {
                       <h3 className="text-lg font-medium">Theme Preferences</h3>
                       <div className="flex items-center justify-between">
                         <Label htmlFor="darkMode">Dark Mode</Label>
-                        <Switch id="darkMode" />
+                        <Switch 
+                          id="darkMode" 
+                          checked={isDarkMode}
+                          onCheckedChange={toggleDarkMode}
+                        />
                       </div>
                     </div>
                   </CardContent>

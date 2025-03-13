@@ -14,7 +14,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-// Add the FolderTag icon import
 import { 
   Home, 
   Settings, 
@@ -22,7 +21,8 @@ import {
   Users, 
   LogOut, 
   FolderInput,
-  FolderKanban, 
+  FolderKanban,
+  CreditCard
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -86,6 +86,15 @@ export function AppSidebar() {
         >
           <Users size={18} />
           <span>Customers</span>
+        </Link>
+        <Link
+          to="/bank-reconciliation"
+          className={`flex items-center gap-3 px-3 py-2 rounded-md ${
+            pathname === "/bank-reconciliation" ? "bg-accent" : "hover:bg-muted"
+          }`}
+        >
+          <CreditCard size={18} />
+          <span>Bank Movements</span>
         </Link>
         <Link
           to="/settings"

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -84,7 +85,7 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
         .select('reference')
         .eq('company_id', companyId);
       
-      const existingReferences = new Set(existingMovements?.map(m => m.reference) || []);
+      const existingReferences = new Set((existingMovements || []).map(m => m.reference));
       
       setProgress(50);
       
@@ -111,8 +112,8 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
         }
         
         // Parse amount
-        let amount = values[amountIndex].replace(/[^\d.-]/g, '');
-        amount = parseFloat(amount);
+        let amountStr = values[amountIndex].replace(/[^\d.-]/g, '');
+        let amount = parseFloat(amountStr);
         
         if (isNaN(amount)) continue;
         
@@ -144,7 +145,7 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
         
         if (error) throw error;
         
-        setProgress(70 + (i / movements.length) * 30);
+        setProgress(70 + Math.floor((i / movements.length) * 30));
       }
       
       setProgress(100);
