@@ -1,8 +1,15 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
+
+export interface InvoicingCompany {
+  id: string;
+  name: string;
+  payment_template: string;
+  user_id: string;
+  created_at?: string;
+}
 
 export interface UserSettings {
   id?: string;
@@ -16,14 +23,6 @@ export interface UserSettings {
   updated_at?: string;
 }
 
-export interface InvoicingCompany {
-  id: string;
-  name: string;
-  payment_template: string;
-  user_id: string;
-  created_at?: string;
-}
-
 export const useSettings = () => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,20 +33,32 @@ export const useSettings = () => {
 
     setIsLoading(true);
     try {
-      // First check if user has settings
-      const { data, error } = await supabase
+      // Get user settings
+      const { data: settingsData, error: settingsError } = await supabase
         .from("user_settings")
-        .select("*, companies(*)")
+        .select()
         .eq("user_id", user?.id || "00000000-0000-0000-0000-000000000000")
         .maybeSingle();
 
-      if (error && error.code !== "PGRST116") {
-        // PGRST116 means no rows found, which is expected for new users
-        throw error;
+      if (settingsError && settingsError.code !== "PGRST116") {
+        throw settingsError;
       }
 
-      if (data) {
-        setSettings(data);
+      // Get companies for the user
+      const { data: companiesData, error: companiesError } = await supabase
+        .from("companies")
+        .select()
+        .eq("user_id", user?.id || "00000000-0000-0000-0000-000000000000");
+
+      if (companiesError) {
+        throw companiesError;
+      }
+
+      if (settingsData) {
+        setSettings({
+          ...settingsData,
+          companies: companiesData || []
+        });
       } else {
         // Create default settings for new user
         const defaultSettings: UserSettings = {
@@ -56,7 +67,7 @@ export const useSettings = () => {
           show_company: true,
           default_currency: "USD",
           default_company: null,
-          companies: [],
+          companies: companiesData || [],
         };
 
         const { data: newSettings, error: insertError } = await supabase
@@ -66,7 +77,10 @@ export const useSettings = () => {
           .single();
 
         if (insertError) throw insertError;
-        setSettings(newSettings || defaultSettings);
+        setSettings({
+          ...newSettings,
+          companies: companiesData || []
+        });
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -84,12 +98,13 @@ export const useSettings = () => {
         .from("user_settings")
         .update(updatedSettings)
         .eq("id", settings.id)
-        .select("*, companies(*)")
+        .select()
         .single();
 
       if (error) throw error;
 
-      setSettings(data);
+      // Refetch to get updated companies data
+      await fetchSettings();
       toast.success("Settings updated successfully");
       return data;
     } catch (error) {

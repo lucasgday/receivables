@@ -9,6 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bank_movements: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string | null
+          currency: string
+          date: string
+          description: string
+          id: string
+          invoice_id: string | null
+          reference: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string | null
+          currency: string
+          date: string
+          description: string
+          id?: string
+          invoice_id?: string | null
+          reference: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string | null
+          currency?: string
+          date?: string
+          description?: string
+          id?: string
+          invoice_id?: string | null
+          reference?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_movements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_movements_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string | null
@@ -32,6 +86,30 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          payment_template: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          payment_template: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          payment_template?: string
           user_id?: string
         }
         Relationships: []

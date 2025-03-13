@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,13 +21,15 @@ interface Invoice {
 
 interface BankMovement {
   id: string;
+  company_id: string;
   date: string;
+  description: string;
   amount: number;
   currency: string;
-  description: string;
   reference: string;
-  company_id: string;
+  invoice_id: string | null;
   user_id: string;
+  created_at: string;
 }
 
 interface LinkInvoiceDialogProps {

@@ -27,6 +27,15 @@ interface BankMovement {
   invoice_id: string | null;
   created_at: string;
   user_id: string;
+  invoices?: {
+    id: string;
+    invoice_number: string;
+    amount: number;
+    customer_id: string;
+    customers: {
+      name: string;
+    };
+  } | null;
 }
 
 export function BankMovementsList({ userId, companyId }: { userId?: string; companyId: string | null }) {
@@ -62,7 +71,7 @@ export function BankMovementsList({ userId, companyId }: { userId?: string; comp
       const { data, error } = await query;
 
       if (error) throw error;
-      setMovements(data || []);
+      setMovements(data as BankMovement[] || []);
     } catch (error) {
       console.error("Error fetching bank movements:", error);
       toast.error("Failed to load bank movements");

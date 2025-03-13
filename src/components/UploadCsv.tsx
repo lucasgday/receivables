@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -6,6 +5,19 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { UploadCloud } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+
+interface BankMovement {
+  id: string;
+  company_id: string;
+  date: string;
+  description: string;
+  amount: number;
+  currency: string;
+  reference: string;
+  invoice_id: string | null;
+  user_id: string;
+  created_at: string;
+}
 
 interface UploadCsvProps {
   companyId: string | null;
