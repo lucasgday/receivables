@@ -11,8 +11,17 @@ export interface UserSettings {
   show_company: boolean;
   default_currency: string;
   default_company: string | null;
+  companies?: InvoicingCompany[];
   created_at?: string;
   updated_at?: string;
+}
+
+export interface InvoicingCompany {
+  id: string;
+  name: string;
+  payment_template: string;
+  user_id: string;
+  created_at?: string;
 }
 
 export const useSettings = () => {
@@ -25,11 +34,12 @@ export const useSettings = () => {
 
     setIsLoading(true);
     try {
+      // First check if user has settings
       const { data, error } = await supabase
         .from("user_settings")
-        .select("*")
+        .select("*, companies(*)")
         .eq("user_id", user?.id || "00000000-0000-0000-0000-000000000000")
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== "PGRST116") {
         // PGRST116 means no rows found, which is expected for new users
@@ -46,6 +56,7 @@ export const useSettings = () => {
           show_company: true,
           default_currency: "USD",
           default_company: null,
+          companies: [],
         };
 
         const { data: newSettings, error: insertError } = await supabase
@@ -73,7 +84,7 @@ export const useSettings = () => {
         .from("user_settings")
         .update(updatedSettings)
         .eq("id", settings.id)
-        .select()
+        .select("*, companies(*)")
         .single();
 
       if (error) throw error;
@@ -88,6 +99,75 @@ export const useSettings = () => {
     }
   };
 
+  const addCompany = async (company: { name: string, payment_template: string }) => {
+    if (!user) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from("companies")
+        .insert({
+          user_id: user.id,
+          name: company.name,
+          payment_template: company.payment_template
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Refresh settings to get the updated companies list
+      await fetchSettings();
+      toast.success("Company added successfully");
+      return data;
+    } catch (error) {
+      console.error("Error adding company:", error);
+      toast.error("Failed to add company");
+      return null;
+    }
+  };
+
+  const updateCompany = async (id: string, updates: { name?: string, payment_template?: string }) => {
+    try {
+      const { data, error } = await supabase
+        .from("companies")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Refresh settings to get the updated companies list
+      await fetchSettings();
+      toast.success("Company updated successfully");
+      return data;
+    } catch (error) {
+      console.error("Error updating company:", error);
+      toast.error("Failed to update company");
+      return null;
+    }
+  };
+
+  const deleteCompany = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("companies")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      
+      // Refresh settings to get the updated companies list
+      await fetchSettings();
+      toast.success("Company deleted successfully");
+      return true;
+    } catch (error) {
+      console.error("Error deleting company:", error);
+      toast.error("Failed to delete company");
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
@@ -96,6 +176,9 @@ export const useSettings = () => {
     settings,
     isLoading,
     updateSettings,
-    refreshSettings: fetchSettings
+    refreshSettings: fetchSettings,
+    addCompany,
+    updateCompany,
+    deleteCompany
   };
 };
