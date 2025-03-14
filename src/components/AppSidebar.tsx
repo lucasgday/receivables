@@ -15,7 +15,7 @@ import {
   FileText,
   Users,
   Tags,
-  Bank,
+  Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "react-router-dom";
@@ -102,7 +102,7 @@ export function AppSidebar() {
                 )
               }
             >
-              <Bank className="h-4 w-4" />
+              <Banknote className="h-4 w-4" />
               Bank Movements
             </NavLink>
             <NavLink
