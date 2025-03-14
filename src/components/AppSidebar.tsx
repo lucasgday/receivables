@@ -127,9 +127,9 @@ export function AppSidebar() {
           {user ? (
             <>
               <div className="flex items-center gap-3">
-                <UserCircle className="h-8 w-8" />
-                <div>
-                  <p className="text-sm font-medium">{user.email}</p>
+                <UserCircle className="h-8 w-8 flex-shrink-0" />
+                <div className="overflow-hidden">
+                  <p className="text-sm font-medium truncate">{user.email}</p>
                   <p className="text-xs text-muted-foreground">Logged in</p>
                 </div>
               </div>

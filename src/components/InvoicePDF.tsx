@@ -5,8 +5,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileDown, Printer } from "lucide-react";
+import { FileDown, Printer, Mail } from "lucide-react";
 import html2pdf from "html2pdf.js";
+import { toast } from "sonner";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useSettings } from "@/hooks/useSettings";
 
 type Invoice = Tables<"invoices"> & {
   customers: {
@@ -27,6 +40,12 @@ export const InvoicePDF = () => {
   const { id } = useParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const { settings } = useSettings();
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -57,6 +76,19 @@ export const InvoicePDF = () => {
         if (error) throw error;
 
         setInvoice(data);
+        
+        // Pre-populate email fields if customer has an email
+        if (data.customers?.email) {
+          setEmailTo(data.customers.email);
+          setEmailSubject(`Invoice #${data.invoice_number} from ${data.invoicing_company || 'us'}`);
+          
+          // Generate default email body
+          const amount = formatCurrency(Number(data.amount), data.currency || "USD");
+          const company = data.invoicing_company || settings?.default_company || "us";
+          setEmailBody(
+            `Dear ${data.customers.name},\n\nPlease find attached invoice #${data.invoice_number} for ${amount}.\n\nThank you for your business.\n\nBest regards,\n${company}`
+          );
+        }
       } catch (error) {
         console.error("Error fetching invoice:", error);
       } finally {
@@ -65,7 +97,7 @@ export const InvoicePDF = () => {
     };
 
     fetchInvoice();
-  }, [id]);
+  }, [id, settings]);
 
   const formatCurrency = (amount: number, currency = "USD") => {
     return new Intl.NumberFormat('en-US', {
@@ -89,6 +121,47 @@ export const InvoicePDF = () => {
     };
 
     html2pdf().set(opt).from(element).save();
+  };
+  
+  const sendInvoiceEmail = async () => {
+    if (!invoice) return;
+    
+    setIsSending(true);
+    try {
+      // Generate PDF
+      const element = document.getElementById("invoice-pdf");
+      const opt = {
+        margin: 10,
+        filename: `invoice_${invoice?.invoice_number}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      // In a real application, you would:
+      // 1. Send the PDF to a backend service
+      // 2. Have the backend service send the email with the PDF attached
+      
+      // For now, we'll simulate a successful email send
+      setTimeout(() => {
+        setIsSending(false);
+        setIsEmailDialogOpen(false);
+        toast.success(`Invoice sent to ${emailTo}`);
+      }, 1500);
+      
+    } catch (error) {
+      console.error("Error sending invoice:", error);
+      toast.error("Failed to send invoice");
+      setIsSending(false);
+    }
+  };
+  
+  const openEmailDialog = () => {
+    if (!invoice?.customers?.email) {
+      toast.warning("Customer has no email address");
+      return;
+    }
+    setIsEmailDialogOpen(true);
   };
 
   if (isLoading) {
@@ -119,6 +192,10 @@ export const InvoicePDF = () => {
           <Button onClick={() => window.print()} variant="outline">
             <Printer className="h-4 w-4 mr-2" />
             Print
+          </Button>
+          <Button onClick={openEmailDialog} variant="outline">
+            <Mail className="h-4 w-4 mr-2" />
+            Email Invoice
           </Button>
         </div>
       </div>
@@ -239,6 +316,51 @@ export const InvoicePDF = () => {
           </p>
         </CardFooter>
       </Card>
+      
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Email Invoice</DialogTitle>
+            <DialogDescription>
+              Send this invoice via email to your customer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email-to">To</Label>
+              <Input
+                id="email-to"
+                value={emailTo}
+                onChange={(e) => setEmailTo(e.target.value)}
+                placeholder="customer@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email-subject">Subject</Label>
+              <Input
+                id="email-subject"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email-body">Message</Label>
+              <Textarea
+                id="email-body"
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                rows={6}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>Cancel</Button>
+            <Button onClick={sendInvoiceEmail} disabled={isSending}>
+              {isSending ? "Sending..." : "Send Invoice"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

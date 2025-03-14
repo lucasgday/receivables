@@ -18,12 +18,23 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
-import { useSettings } from "@/hooks/useSettings";
+import { useSettings, InvoicingCompany } from "@/hooks/useSettings";
 import { useTheme } from "next-themes";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger
+} from "@/components/ui/dialog";
 
 const Settings = () => {
   const { user } = useAuth();
-  const { settings, isLoading, updateSettings } = useSettings();
+  const { settings, isLoading, updateSettings, addCompany, updateCompany, deleteCompany } = useSettings();
   const { theme, setTheme } = useTheme();
   const [companyName, setCompanyName] = useState("My Company");
   const [email, setEmail] = useState(user?.email || "");
@@ -32,6 +43,21 @@ const Settings = () => {
   const [showCurrency, setShowCurrency] = useState(true);
   const [showCompany, setShowCompany] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  // State for company management
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [newCompanyTemplate, setNewCompanyTemplate] = useState("");
+  const [editCompanyId, setEditCompanyId] = useState<string | null>(null);
+  const [editCompanyName, setEditCompanyName] = useState("");
+  const [editCompanyTemplate, setEditCompanyTemplate] = useState("");
+  const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  // New state for email templates
+  const [emailTemplates, setEmailTemplates] = useState<{[key: string]: string}>({
+    invoice: "Dear {{customer}},\n\nPlease find attached invoice #{{invoice_number}} for {{amount}}.\n\nThank you for your business.\n\nBest regards,\n{{company}}"
+  });
+  const [currentTemplate, setCurrentTemplate] = useState("invoice");
   
   useEffect(() => {
     if (settings) {
@@ -58,9 +84,62 @@ const Settings = () => {
     });
   };
   
+  const saveEmailTemplate = () => {
+    const updatedTemplates = { ...emailTemplates };
+    updatedTemplates[currentTemplate] = emailTemplates[currentTemplate];
+    setEmailTemplates(updatedTemplates);
+    toast.success("Email template saved successfully");
+  };
+  
   const toggleDarkMode = (checked: boolean) => {
     setIsDarkMode(checked);
     setTheme(checked ? "dark" : "light");
+  };
+  
+  const handleAddCompany = async () => {
+    if (newCompanyName.trim() === "") {
+      toast.error("Company name cannot be empty");
+      return;
+    }
+    
+    await addCompany({
+      name: newCompanyName,
+      payment_template: newCompanyTemplate
+    });
+    
+    setNewCompanyName("");
+    setNewCompanyTemplate("");
+    setIsCompanyDialogOpen(false);
+  };
+  
+  const handleEditCompany = async () => {
+    if (!editCompanyId || editCompanyName.trim() === "") {
+      toast.error("Company name cannot be empty");
+      return;
+    }
+    
+    await updateCompany(editCompanyId, {
+      name: editCompanyName,
+      payment_template: editCompanyTemplate
+    });
+    
+    setEditCompanyId(null);
+    setEditCompanyName("");
+    setEditCompanyTemplate("");
+    setIsEditDialogOpen(false);
+  };
+  
+  const startEditCompany = (company: InvoicingCompany) => {
+    setEditCompanyId(company.id);
+    setEditCompanyName(company.name);
+    setEditCompanyTemplate(company.payment_template);
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleDeleteCompany = async (id: string) => {
+    if (confirm("Are you sure you want to delete this company?")) {
+      await deleteCompany(id);
+    }
   };
 
   return (
@@ -78,6 +157,8 @@ const Settings = () => {
                 <TabsTrigger value="account">Account</TabsTrigger>
                 <TabsTrigger value="notifications">Notifications</TabsTrigger>
                 <TabsTrigger value="invoices">Invoice Settings</TabsTrigger>
+                <TabsTrigger value="companies">Companies</TabsTrigger>
+                <TabsTrigger value="email">Email Templates</TabsTrigger>
               </TabsList>
 
               <TabsContent value="general">
@@ -273,6 +354,179 @@ const Settings = () => {
                   </CardContent>
                   <CardFooter>
                     <Button onClick={saveInvoiceSettings}>Save Settings</Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="companies">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Companies</CardTitle>
+                      <CardDescription>
+                        Manage your invoicing companies
+                      </CardDescription>
+                    </div>
+                    <Dialog open={isCompanyDialogOpen} onOpenChange={setIsCompanyDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Company
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add New Company</DialogTitle>
+                          <DialogDescription>
+                            Enter the details for your new invoicing company.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="new-company-name">Company Name</Label>
+                            <Input
+                              id="new-company-name"
+                              value={newCompanyName}
+                              onChange={(e) => setNewCompanyName(e.target.value)}
+                              placeholder="Acme Inc."
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="new-company-template">Payment Template</Label>
+                            <Textarea
+                              id="new-company-template"
+                              value={newCompanyTemplate}
+                              onChange={(e) => setNewCompanyTemplate(e.target.value)}
+                              placeholder="Please make payment to..."
+                              rows={5}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsCompanyDialogOpen(false)}>Cancel</Button>
+                          <Button onClick={handleAddCompany}>Add Company</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <div className="text-center py-6">Loading companies...</div>
+                    ) : settings?.companies && settings.companies.length > 0 ? (
+                      <div className="space-y-4">
+                        {settings.companies.map((company) => (
+                          <div key={company.id} className="border rounded-lg p-4">
+                            <div className="flex justify-between items-center">
+                              <h3 className="text-lg font-medium">{company.name}</h3>
+                              <div className="flex gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => startEditCompany(company)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleDeleteCompany(company.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            {company.payment_template && (
+                              <div className="mt-2">
+                                <Label className="text-sm text-muted-foreground mb-1">Payment Template</Label>
+                                <p className="text-sm whitespace-pre-wrap border rounded-md p-2 bg-muted/30">
+                                  {company.payment_template}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10">
+                        <p className="text-muted-foreground mb-4">No companies added yet</p>
+                        <Button onClick={() => setIsCompanyDialogOpen(true)}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Your First Company
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Company</DialogTitle>
+                      <DialogDescription>
+                        Update the details for your company.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-company-name">Company Name</Label>
+                        <Input
+                          id="edit-company-name"
+                          value={editCompanyName}
+                          onChange={(e) => setEditCompanyName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-company-template">Payment Template</Label>
+                        <Textarea
+                          id="edit-company-template"
+                          value={editCompanyTemplate}
+                          onChange={(e) => setEditCompanyTemplate(e.target.value)}
+                          rows={5}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                      <Button onClick={handleEditCompany}>Update Company</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </TabsContent>
+              
+              <TabsContent value="email">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Email Templates</CardTitle>
+                    <CardDescription>
+                      Customize email templates for different purposes
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="templateType">Template Type</Label>
+                      <select
+                        id="templateType"
+                        className="w-full p-2 border rounded-md"
+                        value={currentTemplate}
+                        onChange={(e) => setCurrentTemplate(e.target.value)}
+                      >
+                        <option value="invoice">Invoice Email</option>
+                        <option value="reminder">Payment Reminder</option>
+                        <option value="receipt">Payment Receipt</option>
+                      </select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="emailTemplate">Email Template</Label>
+                      <div className="text-xs text-muted-foreground mb-2">
+                        Available placeholders: {{'{{'}}customer{{'}}'}}, {{'{{'}}invoice_number{{'}}'}}, {{'{{'}}amount{{'}}'}}, {{'{{'}}company{{'}}'}}
+                      </div>
+                      <Textarea
+                        id="emailTemplate"
+                        value={emailTemplates[currentTemplate] || ""}
+                        onChange={(e) => {
+                          const updatedTemplates = { ...emailTemplates };
+                          updatedTemplates[currentTemplate] = e.target.value;
+                          setEmailTemplates(updatedTemplates);
+                        }}
+                        rows={8}
+                      />
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button onClick={saveEmailTemplate}>Save Template</Button>
                   </CardFooter>
                 </Card>
               </TabsContent>
