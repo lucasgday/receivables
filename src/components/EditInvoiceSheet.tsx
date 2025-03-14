@@ -22,7 +22,7 @@ export function EditInvoiceSheet({
   
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto">
+      <SheetContent className="overflow-y-auto sm:max-w-xl w-full">
         <SheetHeader>
           <SheetTitle>Edit Invoice</SheetTitle>
           <SheetDescription>

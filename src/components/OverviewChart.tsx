@@ -4,11 +4,13 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "rec
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function OverviewChart() {
   const [data, setData] = useState<{ month: string; amount: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const [timeRange, setTimeRange] = useState("6months");
 
   useEffect(() => {
     const fetchRevenueData = async () => {
@@ -16,12 +18,30 @@ export function OverviewChart() {
 
       try {
         const now = new Date();
-        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+        let startDate = new Date();
+        
+        // Calculate the start date based on selected time range
+        switch (timeRange) {
+          case "3months":
+            startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+            break;
+          case "6months":
+            startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+            break;
+          case "12months":
+            startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+            break;
+          case "ytd":
+            startDate = new Date(now.getFullYear(), 0, 1);
+            break;
+          default:
+            startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+        }
 
         const { data: invoices, error } = await supabase
           .from("invoices")
           .select("amount, issued_date")
-          .gte("issued_date", sixMonthsAgo.toISOString())
+          .gte("issued_date", startDate.toISOString())
           .order("issued_date", { ascending: true });
 
         if (error) throw error;
@@ -49,12 +69,26 @@ export function OverviewChart() {
     };
 
     fetchRevenueData();
-  }, [user]);
+  }, [user, timeRange]);
 
   return (
     <Card className="col-span-4">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Revenue Overview</CardTitle>
+        <Select
+          value={timeRange}
+          onValueChange={setTimeRange}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select time range" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="3months">Last 3 Months</SelectItem>
+            <SelectItem value="6months">Last 6 Months</SelectItem>
+            <SelectItem value="12months">Last 12 Months</SelectItem>
+            <SelectItem value="ytd">Year to Date</SelectItem>
+          </SelectContent>
+        </Select>
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">

@@ -1,140 +1,161 @@
 
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Sidebar, SidebarContent, SidebarTrigger } from "@/components/ui/sidebar";
-import { useAuth } from "./AuthProvider";
-import { useNavigate, Link, useLocation } from "react-router-dom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
-import { 
-  Home, 
-  Settings, 
-  FileText, 
-  Users, 
-  LogOut, 
-  FolderInput,
-  FolderKanban,
-  CreditCard
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+} from "@/components/ui/sidebar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  ArrowLeftToLine,
+  BarChart3,
+  UserCircle,
+  LogOut,
+  Settings as SettingsIcon,
+  FileText,
+  Users,
+  Tags,
+  Bank,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { NavLink } from "react-router-dom";
+import { useAuth } from "./AuthProvider";
+import { cn } from "@/lib/utils";
 
 export function AppSidebar() {
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast.success("Signed out successfully");
-      navigate("/auth");
-    } catch (error) {
-      console.error("Error signing out:", error);
-      toast.error("Failed to sign out");
-    }
-  };
 
   return (
-    <Sidebar className="border-r hidden @sidebar:flex flex-col flex-grow">
-      <div className="p-3 flex-shrink-0">
-        <Link to="/" className="flex items-center gap-2 font-bold text-lg">
-          <FolderInput className="w-6 h-6" />
-          <span>Invoicer</span>
-        </Link>
-      </div>
-
-      <nav className="flex-1 p-3 space-y-2">
-        <Link
-          to="/"
-          className={`flex items-center gap-3 px-3 py-2 rounded-md ${
-            pathname === "/" ? "bg-accent" : "hover:bg-muted"
-          }`}
-        >
-          <Home size={18} />
-          <span>Dashboard</span>
-        </Link>
-        <Link
-          to="/invoices"
-          className={`flex items-center gap-3 px-3 py-2 rounded-md ${
-            pathname === "/invoices" ? "bg-accent" : "hover:bg-muted"
-          }`}
-        >
-          <FileText size={18} />
-          <span>Invoices</span>
-        </Link>
-        <Link
-          to="/categories"
-          className={`flex items-center gap-3 px-3 py-2 rounded-md ${
-            pathname === "/categories" ? "bg-accent" : "hover:bg-muted"
-          }`}
-        >
-          <FolderKanban size={18} />
-          <span>Categories</span>
-        </Link>
-        <Link
-          to="/customers"
-          className={`flex items-center gap-3 px-3 py-2 rounded-md ${
-            pathname === "/customers" ? "bg-accent" : "hover:bg-muted"
-          }`}
-        >
-          <Users size={18} />
-          <span>Customers</span>
-        </Link>
-        <Link
-          to="/bank-reconciliation"
-          className={`flex items-center gap-3 px-3 py-2 rounded-md ${
-            pathname === "/bank-reconciliation" ? "bg-accent" : "hover:bg-muted"
-          }`}
-        >
-          <CreditCard size={18} />
-          <span>Bank Movements</span>
-        </Link>
-        <Link
-          to="/settings"
-          className={`flex items-center gap-3 px-3 py-2 rounded-md ${
-            pathname === "/settings" ? "bg-accent" : "hover:bg-muted"
-          }`}
-        >
-          <Settings size={18} />
-          <span>Settings</span>
-        </Link>
-      </nav>
-
-      <div className="p-3 flex-shrink-0 border-t">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Avatar className="size-7">
-                <AvatarImage src={user?.email ? undefined : ""} />
-                <AvatarFallback>{user?.email?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col text-left leading-none">
-                <span className="font-medium">{user?.email || "User"}</span>
-                <span className="text-muted-foreground text-sm">{user?.email}</span>
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-48" align="end">
-            <DropdownMenuItem onClick={() => navigate("/settings")}>
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}
-            className="text-destructive focus:text-destructive"
+    <Sidebar className="border-r">
+      <SidebarHeader>
+        <div className="p-4 text-lg font-semibold tracking-tight">
+          InvoiceHubster
+        </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <ScrollArea className="h-screen">
+          <div className="space-y-1 p-2">
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "hover:bg-muted text-muted-foreground"
+                )
+              }
             >
-              Sign out
-              <LogOut className="ml-auto h-4 w-4" />
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </NavLink>
+            <NavLink
+              to="/invoices"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "hover:bg-muted text-muted-foreground"
+                )
+              }
+            >
+              <FileText className="h-4 w-4" />
+              Invoices
+            </NavLink>
+            <NavLink
+              to="/customers"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "hover:bg-muted text-muted-foreground"
+                )
+              }
+            >
+              <Users className="h-4 w-4" />
+              Customers
+            </NavLink>
+            <NavLink
+              to="/categories"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "hover:bg-muted text-muted-foreground"
+                )
+              }
+            >
+              <Tags className="h-4 w-4" />
+              Categories
+            </NavLink>
+            <NavLink
+              to="/bank-reconciliation"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "hover:bg-muted text-muted-foreground"
+                )
+              }
+            >
+              <Bank className="h-4 w-4" />
+              Bank Movements
+            </NavLink>
+            <NavLink
+              to="/settings"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "hover:bg-muted text-muted-foreground"
+                )
+              }
+            >
+              <SettingsIcon className="h-4 w-4" />
+              Settings
+            </NavLink>
+          </div>
+        </ScrollArea>
+      </SidebarContent>
+      <SidebarFooter>
+        <div className="p-4 space-y-4">
+          {user ? (
+            <>
+              <div className="flex items-center gap-3">
+                <UserCircle className="h-8 w-8" />
+                <div>
+                  <p className="text-sm font-medium">{user.email}</p>
+                  <p className="text-xs text-muted-foreground">Logged in</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full flex justify-between items-center"
+                onClick={() => signOut()}
+              >
+                <span>Sign out</span>
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full flex justify-between items-center"
+              asChild
+            >
+              <NavLink to="/auth">
+                <span>Sign in</span>
+                <ArrowLeftToLine className="h-4 w-4" />
+              </NavLink>
+            </Button>
+          )}
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }

@@ -14,6 +14,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { toast } from "sonner";
 import { Tables } from "@/integrations/supabase/types";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal, Trash, Edit, FileDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EditInvoiceSheet } from "./EditInvoiceSheet";
 
 type Invoice = Tables<"invoices"> & {
   customers: {
@@ -37,38 +46,40 @@ export function RecentInvoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+
+  const fetchInvoices = async () => {
+    if (!user && !import.meta.env.DEV) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select(`
+          *,
+          customers (
+            name
+          ),
+          categories (
+            name
+          )
+        `)
+        .order("issued_date", { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+
+      setInvoices(data || []);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      toast.error("Failed to load recent invoices");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchInvoices = async () => {
-      if (!user && !import.meta.env.DEV) return;
-
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("invoices")
-          .select(`
-            *,
-            customers (
-              name
-            ),
-            categories (
-              name
-            )
-          `)
-          .order("issued_date", { ascending: false })
-          .limit(5);
-
-        if (error) throw error;
-
-        setInvoices(data || []);
-      } catch (error) {
-        console.error("Error fetching invoices:", error);
-        toast.error("Failed to load recent invoices");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchInvoices();
   }, [user]);
 
@@ -81,6 +92,40 @@ export function RecentInvoices() {
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString();
+  };
+
+  const handleDeleteInvoice = async (invoiceId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!confirm("Are you sure you want to delete this invoice?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .delete()
+        .eq("id", invoiceId);
+
+      if (error) throw error;
+
+      setInvoices(invoices.filter(inv => inv.id !== invoiceId));
+      toast.success("Invoice deleted successfully");
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      toast.error("Failed to delete invoice");
+    }
+  };
+
+  const handleEditInvoice = (invoice: Invoice, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingInvoice(invoice);
+    setEditSheetOpen(true);
+  };
+
+  const handleGeneratePdf = (invoiceId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(`/invoice-pdf/${invoiceId}`, '_blank');
   };
 
   if (isLoading) {
@@ -124,6 +169,7 @@ export function RecentInvoices() {
               <TableHead>Amount</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Date</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -146,10 +192,40 @@ export function RecentInvoices() {
                     ? `Paid on ${formatDate(invoice.paid_date)}`
                     : formatDate(invoice.due_date)}
                 </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={(e) => handleEditInvoice(invoice, e)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => handleGeneratePdf(invoice.id, e)}>
+                        <FileDown className="h-4 w-4 mr-2" />
+                        Generate PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => handleDeleteInvoice(invoice.id, e)}>
+                        <Trash className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        
+        <EditInvoiceSheet
+          open={editSheetOpen}
+          onOpenChange={setEditSheetOpen}
+          invoice={editingInvoice}
+          onInvoiceUpdated={fetchInvoices}
+        />
       </CardContent>
     </Card>
   );

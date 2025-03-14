@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import {
@@ -17,6 +16,7 @@ import { BankMovementsList } from "@/components/BankMovementsList";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/hooks/useSettings";
 import { UploadCsv } from "@/components/UploadCsv";
+import { toast } from "sonner";
 
 const BankReconciliation = () => {
   const { user } = useAuth();
@@ -24,6 +24,17 @@ const BankReconciliation = () => {
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [currency, setCurrency] = useState("USD");
   const [isImporting, setIsImporting] = useState(false);
+  
+  useEffect(() => {
+    if (settings?.companies && settings.companies.length > 0) {
+      const defaultCompany = settings.companies.find(c => c.id === settings.default_company);
+      if (defaultCompany) {
+        setSelectedCompany(defaultCompany.id);
+      } else {
+        setSelectedCompany(settings.companies[0].id);
+      }
+    }
+  }, [settings]);
   
   return (
     <SidebarProvider>
@@ -56,13 +67,31 @@ const BankReconciliation = () => {
                         <SelectValue placeholder="Select a company" />
                       </SelectTrigger>
                       <SelectContent>
-                        {settings?.companies?.map((company) => (
-                          <SelectItem key={company.id} value={company.id}>
-                            {company.name}
+                        {settings?.companies?.length > 0 ? (
+                          settings.companies.map((company) => (
+                            <SelectItem key={company.id} value={company.id}>
+                              {company.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-companies" disabled>
+                            No companies available
                           </SelectItem>
-                        ))}
+                        )}
                       </SelectContent>
                     </Select>
+                    {!settings?.companies?.length && !isLoadingSettings && (
+                      <p className="text-sm text-red-500">
+                        Please add a company in{" "}
+                        <Button 
+                          variant="link" 
+                          className="p-0 h-auto text-sm" 
+                          onClick={() => window.location.href = "/settings"}
+                        >
+                          Settings
+                        </Button>
+                      </p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -82,12 +111,27 @@ const BankReconciliation = () => {
                   </div>
                 </div>
 
-                <UploadCsv 
-                  companyId={selectedCompany}
-                  currency={currency}
-                  onImportStart={() => setIsImporting(true)}
-                  onImportComplete={() => setIsImporting(false)}
-                />
+                {settings?.companies?.length > 0 ? (
+                  <UploadCsv 
+                    companyId={selectedCompany}
+                    currency={currency}
+                    onImportStart={() => setIsImporting(true)}
+                    onImportComplete={() => setIsImporting(false)}
+                  />
+                ) : (
+                  <div className="text-center py-4 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+                    <p className="text-muted-foreground">
+                      You need to add at least one company in Settings before you can upload bank movements.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4" 
+                      onClick={() => window.location.href = "/settings"}
+                    >
+                      Go to Settings
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

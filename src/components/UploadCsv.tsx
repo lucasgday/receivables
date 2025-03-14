@@ -111,7 +111,7 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
           console.warn("Could not parse date:", date);
         }
         
-        // Parse amount
+        // Parse amount - fix TypeScript error here
         let amountStr = values[amountIndex].replace(/[^\d.-]/g, '');
         let amount = parseFloat(amountStr);
         
@@ -122,7 +122,7 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
           company_id: companyId,
           date,
           description: values[descriptionIndex],
-          amount,
+          amount,  // This is now a number
           currency,
           reference,
         });
@@ -145,6 +145,7 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
         
         if (error) throw error;
         
+        // Calculate progress percentage correctly as a number
         setProgress(70 + Math.floor((i / movements.length) * 30));
       }
       

@@ -12,7 +12,7 @@ interface NewInvoiceSheetProps {
 export function NewInvoiceSheet({ open, onOpenChange, onInvoiceCreated, customerId }: NewInvoiceSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto">
+      <SheetContent className="overflow-y-auto sm:max-w-xl w-full">
         <SheetHeader>
           <SheetTitle>Create New Invoice</SheetTitle>
           <SheetDescription>

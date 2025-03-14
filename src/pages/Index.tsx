@@ -111,6 +111,7 @@ const Index = () => {
                     ? "Add your first invoice"
                     : "Unpaid invoices"
                 }
+                linkTo={dashboardData.totalReceivables === 0 ? "/invoices" : undefined}
                 icon={<DollarSign className="h-4 w-4" />}
               />
               <StatsCard
@@ -121,6 +122,7 @@ const Index = () => {
                     ? "Create your first invoice"
                     : "Awaiting payment"
                 }
+                linkTo={dashboardData.openInvoices === 0 ? "/invoices" : undefined}
                 icon={<FileText className="h-4 w-4" />}
               />
               <StatsCard
@@ -131,6 +133,7 @@ const Index = () => {
                     ? "Add your first customer"
                     : "Customers in your database"
                 }
+                linkTo={dashboardData.activeCustomers === 0 ? "/customers" : undefined}
                 icon={<Users className="h-4 w-4" />}
               />
               <StatsCard
@@ -141,6 +144,7 @@ const Index = () => {
                     ? "Track your first payment"
                     : "Of invoices paid"
                 }
+                linkTo={dashboardData.collectionRate === 0 ? "/invoices" : undefined}
                 icon={<ArrowUpRight className="h-4 w-4" />}
               />
             </div>

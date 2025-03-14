@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { X } from "lucide-react";
 
 type Step = {
   title: string;
@@ -32,6 +33,16 @@ const steps: Step[] = [
     title: "Create Invoices",
     description: "Once you have customers, you can create invoices for them and track payments.",
     icon: "📄",
+  },
+  {
+    title: "Bank Reconciliation",
+    description: "Upload your bank statements to automatically match payments with your outstanding invoices.",
+    icon: "🏦",
+  },
+  {
+    title: "Manage Categories",
+    description: "Organize your invoices with categories to better track your different income streams.",
+    icon: "🏷️",
   },
   {
     title: "Monitor Dashboard",
@@ -58,7 +69,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md relative">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute right-2 top-2" 
+          onClick={onComplete}
+        >
+          <X className="h-4 w-4" />
+        </Button>
         <CardHeader>
           <div className="text-center text-4xl mb-2">{steps[currentStep].icon}</div>
           <CardTitle className="text-center">{steps[currentStep].title}</CardTitle>
@@ -76,6 +95,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             disabled={currentStep === 0}
           >
             Previous
+          </Button>
+          <Button variant="outline" onClick={onComplete}>
+            Skip
           </Button>
           <Button onClick={handleNext}>
             {currentStep < steps.length - 1 ? "Next" : "Get Started"}
