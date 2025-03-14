@@ -30,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 const customerSchema = z.object({
   name: z.string().optional(),
   contact: z.string().optional(),
-  email: z.string().email().optional().or(z.literal('')),
+  email: z.string().email("A valid email is required"),
   phone: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -213,9 +213,9 @@ export const AddCustomerSheet = ({
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email (required)</FormLabel>
                     <FormControl>
-                      <Input placeholder="john@acme.com" type="email" {...field} />
+                      <Input placeholder="john@acme.com" type="email" {...field} required />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -18,6 +19,30 @@ import { useSettings } from "@/hooks/useSettings";
 import { UploadCsv } from "@/components/UploadCsv";
 import { toast } from "sonner";
 
+// Define all supported currencies
+const CURRENCIES = [
+  { value: "USD", label: "USD - US Dollar" },
+  { value: "EUR", label: "EUR - Euro" },
+  { value: "GBP", label: "GBP - British Pound" },
+  { value: "CAD", label: "CAD - Canadian Dollar" },
+  { value: "AUD", label: "AUD - Australian Dollar" },
+  { value: "JPY", label: "JPY - Japanese Yen" },
+  { value: "CHF", label: "CHF - Swiss Franc" },
+  { value: "CNY", label: "CNY - Chinese Yuan" },
+  { value: "INR", label: "INR - Indian Rupee" },
+  { value: "BRL", label: "BRL - Brazilian Real" },
+  { value: "MXN", label: "MXN - Mexican Peso" },
+  { value: "NZD", label: "NZD - New Zealand Dollar" },
+  { value: "SGD", label: "SGD - Singapore Dollar" },
+  { value: "HKD", label: "HKD - Hong Kong Dollar" },
+  { value: "SEK", label: "SEK - Swedish Krona" },
+  { value: "NOK", label: "NOK - Norwegian Krone" },
+  { value: "DKK", label: "DKK - Danish Krone" },
+  { value: "PLN", label: "PLN - Polish Zloty" },
+  { value: "ZAR", label: "ZAR - South African Rand" },
+  { value: "RUB", label: "RUB - Russian Ruble" },
+];
+
 const BankReconciliation = () => {
   const { user } = useAuth();
   const { settings, isLoading: isLoadingSettings } = useSettings();
@@ -33,6 +58,11 @@ const BankReconciliation = () => {
       } else {
         setSelectedCompany(settings.companies[0].id);
       }
+    }
+    
+    // Set default currency from settings if available
+    if (settings?.default_currency) {
+      setCurrency(settings.default_currency);
     }
   }, [settings]);
   
@@ -100,12 +130,12 @@ const BankReconciliation = () => {
                       <SelectTrigger id="currency">
                         <SelectValue placeholder="Select currency" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                        <SelectItem value="CAD">CAD</SelectItem>
-                        <SelectItem value="AUD">AUD</SelectItem>
+                      <SelectContent className="max-h-[240px]">
+                        {CURRENCIES.map(currency => (
+                          <SelectItem key={currency.value} value={currency.value}>
+                            {currency.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

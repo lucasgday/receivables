@@ -182,19 +182,18 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
             id="file-upload"
             type="file"
             accept=".csv"
-            className="hidden"
+            className="absolute w-full h-full opacity-0 cursor-pointer"
             onChange={handleFileUpload}
             disabled={!companyId || isUploading}
+            style={{ top: 0, left: 0 }}
           />
-          <label htmlFor="file-upload">
-            <Button 
-              variant="outline"
-              className="mt-4"
-              disabled={!companyId || isUploading}
-            >
-              Select CSV File
-            </Button>
-          </label>
+          <Button 
+            variant="outline"
+            className="mt-4 pointer-events-none"
+            disabled={!companyId || isUploading}
+          >
+            Select CSV File
+          </Button>
         </div>
       )}
     </div>
