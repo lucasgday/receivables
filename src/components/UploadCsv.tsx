@@ -4,8 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { UploadCloud } from "lucide-react";
+import { UploadCloud, Info } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface BankMovement {
   id: string;
@@ -60,6 +66,11 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
       // Parse CSV file
       const text = await file.text();
       const rows = text.split('\n').filter(row => row.trim());
+      
+      if (rows.length <= 1) {
+        throw new Error("CSV file is empty or contains only headers");
+      }
+      
       const headers = rows[0].split(',').map(header => header.trim());
       
       // Check if required columns exist
@@ -86,6 +97,7 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
         .eq('company_id', companyId);
       
       const existingReferences = new Set((existingMovements || []).map(m => m.reference));
+      let duplicateCount = 0;
       
       setProgress(50);
       
@@ -97,7 +109,10 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
         const reference = values[referenceIndex];
         
         // Skip if this reference already exists
-        if (existingReferences.has(reference)) continue;
+        if (existingReferences.has(reference)) {
+          duplicateCount++;
+          continue;
+        }
         
         // Parse date
         let date = values[dateIndex];
@@ -122,7 +137,7 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
           company_id: companyId,
           date,
           description: values[descriptionIndex],
-          amount,  // This is now a number
+          amount,
           currency,
           reference,
         });
@@ -131,7 +146,15 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
       setProgress(70);
       
       if (movements.length === 0) {
-        toast.info("No new movements found to import");
+        if (duplicateCount > 0) {
+          toast.info(`No new movements to import. ${duplicateCount} movement(s) already exist in the database.`);
+        } else {
+          toast.info("No valid movements found to import");
+        }
+        setIsUploading(false);
+        onImportComplete();
+        // Reset the file input
+        event.target.value = '';
         return;
       }
       
@@ -150,7 +173,8 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
       }
       
       setProgress(100);
-      toast.success(`Successfully imported ${movements.length} bank movements`);
+      toast.success(`Successfully imported ${movements.length} bank movements` + 
+        (duplicateCount > 0 ? ` (${duplicateCount} skipped as duplicates)` : ''));
     } catch (error) {
       console.error("Error processing CSV:", error);
       toast.error("Failed to process CSV file: " + (error as Error).message);
@@ -170,14 +194,29 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
           <p className="text-sm text-center">Processing CSV file: {progress}%</p>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6">
+        <div className="flex flex-col items-center justify-center relative border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6">
           <UploadCloud className="h-12 w-12 text-gray-400 mb-4" />
           <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
             <span className="font-semibold">Click to upload</span> or drag and drop
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            CSV file only (make sure it has date, description, amount, and reference columns)
-          </p>
+          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
+            <span>CSV file with date, description, amount, and </span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger className="flex items-center">
+                  <span className="underline mx-1">reference</span>
+                  <Info className="h-3 w-3" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">
+                    The reference column should contain a unique identifier for each transaction
+                    (like transaction ID from your bank). This is used to prevent duplicate imports.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <span> columns</span>
+          </div>
           <input
             id="file-upload"
             type="file"

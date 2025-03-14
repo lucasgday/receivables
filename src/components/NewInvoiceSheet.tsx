@@ -10,6 +10,8 @@ interface NewInvoiceSheetProps {
 }
 
 export function NewInvoiceSheet({ open, onOpenChange, onInvoiceCreated, customerId }: NewInvoiceSheetProps) {
+  if (!open) return null;
+  
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto sm:max-w-xl w-full">

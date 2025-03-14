@@ -2,6 +2,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { InvoiceForm } from "./InvoiceForm";
 import { Tables } from "@/integrations/supabase/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Invoice = Tables<"invoices">;
 
@@ -18,7 +19,7 @@ export function EditInvoiceSheet({
   onInvoiceUpdated, 
   invoice 
 }: EditInvoiceSheetProps) {
-  if (!invoice) return null;
+  if (!open) return null;
   
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -30,13 +31,21 @@ export function EditInvoiceSheet({
           </SheetDescription>
         </SheetHeader>
         <div className="mt-6">
-          <InvoiceForm 
-            invoice={invoice} 
-            onSuccess={() => {
-              onInvoiceUpdated();
-              onOpenChange(false);
-            }}
-          />
+          {invoice ? (
+            <InvoiceForm 
+              invoice={invoice} 
+              onSuccess={() => {
+                onInvoiceUpdated();
+                onOpenChange(false);
+              }}
+            />
+          ) : (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>

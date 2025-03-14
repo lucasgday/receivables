@@ -89,7 +89,7 @@ const BankReconciliation = () => {
                   <div className="space-y-2">
                     <Label htmlFor="company">Invoicing Company</Label>
                     <Select
-                      disabled={isLoadingSettings || !settings?.companies?.length}
+                      disabled={isLoadingSettings || !settings?.companies?.length || isImporting}
                       value={selectedCompany || ""}
                       onValueChange={setSelectedCompany}
                     >
@@ -126,7 +126,11 @@ const BankReconciliation = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="currency">Currency</Label>
-                    <Select value={currency} onValueChange={setCurrency}>
+                    <Select 
+                      value={currency} 
+                      onValueChange={setCurrency} 
+                      disabled={isImporting}
+                    >
                       <SelectTrigger id="currency">
                         <SelectValue placeholder="Select currency" />
                       </SelectTrigger>
