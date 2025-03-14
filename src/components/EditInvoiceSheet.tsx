@@ -19,8 +19,6 @@ export function EditInvoiceSheet({
   onInvoiceUpdated, 
   invoice 
 }: EditInvoiceSheetProps) {
-  if (!open) return null;
-  
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto sm:max-w-xl w-full">
@@ -31,20 +29,22 @@ export function EditInvoiceSheet({
           </SheetDescription>
         </SheetHeader>
         <div className="mt-6">
-          {invoice ? (
-            <InvoiceForm 
-              invoice={invoice} 
-              onSuccess={() => {
-                onInvoiceUpdated();
-                onOpenChange(false);
-              }}
-            />
-          ) : (
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
+          {open && (
+            invoice ? (
+              <InvoiceForm 
+                invoice={invoice} 
+                onSuccess={() => {
+                  onInvoiceUpdated();
+                  onOpenChange(false);
+                }}
+              />
+            ) : (
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            )
           )}
         </div>
       </SheetContent>

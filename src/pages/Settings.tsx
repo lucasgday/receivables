@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -21,7 +20,7 @@ import { toast } from "sonner";
 import { useSettings, InvoicingCompany } from "@/hooks/useSettings";
 import { useTheme } from "next-themes";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Check } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -38,6 +37,48 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Checkbox,
+  CheckboxIndicator,
+} from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+const CURRENCIES = [
+  { value: "USD", label: "USD - US Dollar" },
+  { value: "EUR", label: "EUR - Euro" },
+  { value: "GBP", label: "GBP - British Pound" },
+  { value: "CAD", label: "CAD - Canadian Dollar" },
+  { value: "AUD", label: "AUD - Australian Dollar" },
+  { value: "JPY", label: "JPY - Japanese Yen" },
+  { value: "ARS", label: "ARS - Argentine Peso" },
+  { value: "BOB", label: "BOB - Bolivian Boliviano" },
+  { value: "BRL", label: "BRL - Brazilian Real" },
+  { value: "CLP", label: "CLP - Chilean Peso" },
+  { value: "COP", label: "COP - Colombian Peso" },
+  { value: "CRC", label: "CRC - Costa Rican Colón" },
+  { value: "DOP", label: "DOP - Dominican Peso" },
+  { value: "GTQ", label: "GTQ - Guatemalan Quetzal" },
+  { value: "HNL", label: "HNL - Honduran Lempira" },
+  { value: "MXN", label: "MXN - Mexican Peso" },
+  { value: "NIO", label: "NIO - Nicaraguan Córdoba" },
+  { value: "PAB", label: "PAB - Panamanian Balboa" },
+  { value: "PEN", label: "PEN - Peruvian Sol" },
+  { value: "PYG", label: "PYG - Paraguayan Guaraní" },
+  { value: "UYU", label: "UYU - Uruguayan Peso" },
+  { value: "VES", label: "VES - Venezuelan Bolívar" },
+  { value: "CHF", label: "CHF - Swiss Franc" },
+  { value: "CNY", label: "CNY - Chinese Yuan" },
+  { value: "INR", label: "INR - Indian Rupee" },
+  { value: "NZD", label: "NZD - New Zealand Dollar" },
+  { value: "SGD", label: "SGD - Singapore Dollar" },
+  { value: "HKD", label: "HKD - Hong Kong Dollar" },
+  { value: "SEK", label: "SEK - Swedish Krona" },
+  { value: "NOK", label: "NOK - Norwegian Krone" },
+  { value: "DKK", label: "DKK - Danish Krone" },
+  { value: "PLN", label: "PLN - Polish Zloty" },
+  { value: "ZAR", label: "ZAR - South African Rand" },
+  { value: "RUB", label: "RUB - Russian Ruble" },
+];
 
 const Settings = () => {
   const { user } = useAuth();
@@ -51,16 +92,19 @@ const Settings = () => {
   const [showCompany, setShowCompany] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
   
-  // State for company management
   const [newCompanyName, setNewCompanyName] = useState("");
   const [newCompanyTemplate, setNewCompanyTemplate] = useState("");
+  const [newCompanyCurrency, setNewCompanyCurrency] = useState("USD");
   const [editCompanyId, setEditCompanyId] = useState<string | null>(null);
   const [editCompanyName, setEditCompanyName] = useState("");
   const [editCompanyTemplate, setEditCompanyTemplate] = useState("");
+  const [editCompanyCurrency, setEditCompanyCurrency] = useState("USD");
   const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
-  // New state for email templates
+  const [enabledCurrencies, setEnabledCurrencies] = useState<string[]>(["USD", "EUR", "GBP"]);
+  const [isCurrencyDialogOpen, setIsCurrencyDialogOpen] = useState(false);
+  
   const [emailTemplates, setEmailTemplates] = useState<{[key: string]: string}>({
     invoice: "Dear {{customer}},\n\nPlease find attached invoice #{{invoice_number}} for {{amount}}.\n\nThank you for your business.\n\nBest regards,\n{{company}}"
   });
@@ -72,9 +116,12 @@ const Settings = () => {
       setDefaultCompany(settings.default_company || "");
       setShowCurrency(settings.show_currency);
       setShowCompany(settings.show_company);
+      
+      if (settings.enabled_currencies && Array.isArray(settings.enabled_currencies)) {
+        setEnabledCurrencies(settings.enabled_currencies);
+      }
     }
     
-    // Set the initial dark mode state based on the current theme
     setIsDarkMode(theme === "dark");
   }, [settings, theme]);
 
@@ -88,6 +135,7 @@ const Settings = () => {
       default_company: defaultCompany,
       show_currency: showCurrency,
       show_company: showCompany,
+      enabled_currencies: enabledCurrencies
     });
   };
   
@@ -111,11 +159,13 @@ const Settings = () => {
     
     await addCompany({
       name: newCompanyName,
-      payment_template: newCompanyTemplate
+      payment_template: newCompanyTemplate,
+      default_currency: newCompanyCurrency
     });
     
     setNewCompanyName("");
     setNewCompanyTemplate("");
+    setNewCompanyCurrency("USD");
     setIsCompanyDialogOpen(false);
   };
   
@@ -127,12 +177,14 @@ const Settings = () => {
     
     await updateCompany(editCompanyId, {
       name: editCompanyName,
-      payment_template: editCompanyTemplate
+      payment_template: editCompanyTemplate,
+      default_currency: editCompanyCurrency
     });
     
     setEditCompanyId(null);
     setEditCompanyName("");
     setEditCompanyTemplate("");
+    setEditCompanyCurrency("USD");
     setIsEditDialogOpen(false);
   };
   
@@ -140,6 +192,7 @@ const Settings = () => {
     setEditCompanyId(company.id);
     setEditCompanyName(company.name);
     setEditCompanyTemplate(company.payment_template);
+    setEditCompanyCurrency(company.default_currency || "USD");
     setIsEditDialogOpen(true);
   };
   
@@ -147,6 +200,16 @@ const Settings = () => {
     if (confirm("Are you sure you want to delete this company?")) {
       await deleteCompany(id);
     }
+  };
+  
+  const toggleCurrency = (currency: string) => {
+    setEnabledCurrencies(prev => {
+      if (prev.includes(currency)) {
+        return prev.filter(c => c !== currency);
+      } else {
+        return [...prev, currency];
+      }
+    });
   };
 
   return (
@@ -165,6 +228,7 @@ const Settings = () => {
                 <TabsTrigger value="notifications">Notifications</TabsTrigger>
                 <TabsTrigger value="invoices">Invoice Settings</TabsTrigger>
                 <TabsTrigger value="companies">Companies</TabsTrigger>
+                <TabsTrigger value="currencies">Currencies</TabsTrigger>
                 <TabsTrigger value="email">Email Templates</TabsTrigger>
               </TabsList>
 
@@ -317,12 +381,32 @@ const Settings = () => {
                       {showCurrency && (
                         <div className="space-y-2 pl-6 border-l-2 border-muted ml-2">
                           <Label htmlFor="defaultCurrency">Default Currency</Label>
-                          <Input 
-                            id="defaultCurrency" 
-                            value={defaultCurrency}
-                            onChange={(e) => setDefaultCurrency(e.target.value)}
-                            placeholder="USD"
-                          />
+                          <Select 
+                            value={defaultCurrency} 
+                            onValueChange={setDefaultCurrency}
+                          >
+                            <SelectTrigger id="defaultCurrency" className="w-full">
+                              <SelectValue placeholder="Select currency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CURRENCIES.filter(c => 
+                                enabledCurrencies.includes(c.value)
+                              ).map(currency => (
+                                <SelectItem key={currency.value} value={currency.value}>
+                                  {currency.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <div className="mt-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setIsCurrencyDialogOpen(true)}
+                            >
+                              Manage Available Currencies
+                            </Button>
+                          </div>
                         </div>
                       )}
                       
@@ -340,13 +424,23 @@ const Settings = () => {
                       
                       {showCompany && (
                         <div className="space-y-2 pl-6 border-l-2 border-muted ml-2">
-                          <Label htmlFor="defaultCompany">Default Company Name</Label>
-                          <Input 
-                            id="defaultCompany"
-                            value={defaultCompany}
-                            onChange={(e) => setDefaultCompany(e.target.value)}
-                            placeholder="Your Company Name"
-                          />
+                          <Label htmlFor="defaultCompany">Default Company</Label>
+                          <Select 
+                            value={defaultCompany || ""}
+                            onValueChange={setDefaultCompany}
+                            disabled={!settings?.companies?.length}
+                          >
+                            <SelectTrigger id="defaultCompany" className="w-full">
+                              <SelectValue placeholder="Select a company" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {settings?.companies?.map((company) => (
+                                <SelectItem key={company.id} value={company.id}>
+                                  {company.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       )}
                     </div>
@@ -399,6 +493,26 @@ const Settings = () => {
                             />
                           </div>
                           <div className="space-y-2">
+                            <Label htmlFor="new-company-currency">Default Currency</Label>
+                            <Select
+                              value={newCompanyCurrency}
+                              onValueChange={setNewCompanyCurrency}
+                            >
+                              <SelectTrigger id="new-company-currency">
+                                <SelectValue placeholder="Select currency" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CURRENCIES.filter(c => 
+                                  enabledCurrencies.includes(c.value)
+                                ).map(currency => (
+                                  <SelectItem key={currency.value} value={currency.value}>
+                                    {currency.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
                             <Label htmlFor="new-company-template">Payment Template</Label>
                             <Textarea
                               id="new-company-template"
@@ -424,7 +538,14 @@ const Settings = () => {
                         {settings.companies.map((company) => (
                           <div key={company.id} className="border rounded-lg p-4">
                             <div className="flex justify-between items-center">
-                              <h3 className="text-lg font-medium">{company.name}</h3>
+                              <div>
+                                <h3 className="text-lg font-medium">{company.name}</h3>
+                                {company.default_currency && (
+                                  <p className="text-sm text-muted-foreground">
+                                    Default Currency: {company.default_currency}
+                                  </p>
+                                )}
+                              </div>
                               <div className="flex gap-2">
                                 <Button variant="ghost" size="sm" onClick={() => startEditCompany(company)}>
                                   <Pencil className="h-4 w-4" />
@@ -475,6 +596,26 @@ const Settings = () => {
                         />
                       </div>
                       <div className="space-y-2">
+                        <Label htmlFor="edit-company-currency">Default Currency</Label>
+                        <Select
+                          value={editCompanyCurrency}
+                          onValueChange={setEditCompanyCurrency}
+                        >
+                          <SelectTrigger id="edit-company-currency">
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CURRENCIES.filter(c => 
+                              enabledCurrencies.includes(c.value)
+                            ).map(currency => (
+                              <SelectItem key={currency.value} value={currency.value}>
+                                {currency.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="edit-company-template">Payment Template</Label>
                         <Textarea
                           id="edit-company-template"
@@ -490,6 +631,48 @@ const Settings = () => {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+              </TabsContent>
+              
+              <TabsContent value="currencies">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Currency Settings</CardTitle>
+                    <CardDescription>
+                      Select which currencies are available throughout the application
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Select the currencies you want to make available for invoices and bank movements.
+                        These currencies will be shown in dropdown menus across the application.
+                      </p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {CURRENCIES.map((currency) => (
+                          <div 
+                            key={currency.value} 
+                            className="flex items-center space-x-2 p-2 border rounded hover:bg-muted/40 cursor-pointer"
+                            onClick={() => toggleCurrency(currency.value)}
+                          >
+                            <Checkbox 
+                              checked={enabledCurrencies.includes(currency.value)}
+                              onCheckedChange={() => toggleCurrency(currency.value)}
+                            >
+                              <CheckboxIndicator>
+                                <Check className="h-4 w-4" />
+                              </CheckboxIndicator>
+                            </Checkbox>
+                            <span>{currency.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button onClick={saveInvoiceSettings}>Save Currency Settings</Button>
+                  </CardFooter>
+                </Card>
               </TabsContent>
               
               <TabsContent value="email">
@@ -544,9 +727,5 @@ const Settings = () => {
           </div>
         </main>
       </div>
-    </SidebarProvider>
-  );
-};
-
-export default Settings;
-
+      
+      <

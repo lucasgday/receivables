@@ -8,6 +8,7 @@ export interface InvoicingCompany {
   id: string;
   name: string;
   payment_template: string;
+  default_currency?: string;
   user_id: string;
   created_at?: string;
 }
@@ -19,6 +20,7 @@ export interface UserSettings {
   show_company: boolean;
   default_currency: string;
   default_company: string | null;
+  enabled_currencies?: string[];
   companies?: InvoicingCompany[];
   created_at?: string;
   updated_at?: string;
@@ -58,6 +60,7 @@ export const useSettings = () => {
       if (settingsData) {
         setSettings({
           ...settingsData,
+          enabled_currencies: settingsData.enabled_currencies || ["USD", "EUR", "GBP"],
           companies: companiesData || []
         });
       } else {
@@ -68,6 +71,7 @@ export const useSettings = () => {
           show_company: true,
           default_currency: "USD",
           default_company: null,
+          enabled_currencies: ["USD", "EUR", "GBP"],
           companies: companiesData || [],
         };
 
@@ -80,6 +84,7 @@ export const useSettings = () => {
         if (insertError) throw insertError;
         setSettings({
           ...newSettings,
+          enabled_currencies: newSettings.enabled_currencies || ["USD", "EUR", "GBP"],
           companies: companiesData || []
         });
       }
@@ -115,7 +120,11 @@ export const useSettings = () => {
     }
   };
 
-  const addCompany = async (company: { name: string, payment_template: string }) => {
+  const addCompany = async (company: { 
+    name: string, 
+    payment_template: string,
+    default_currency?: string
+  }) => {
     if (!user) return null;
     
     try {
@@ -124,7 +133,8 @@ export const useSettings = () => {
         .insert({
           user_id: user.id,
           name: company.name,
-          payment_template: company.payment_template
+          payment_template: company.payment_template,
+          default_currency: company.default_currency || "USD"
         })
         .select()
         .single();
@@ -142,7 +152,11 @@ export const useSettings = () => {
     }
   };
 
-  const updateCompany = async (id: string, updates: { name?: string, payment_template?: string }) => {
+  const updateCompany = async (id: string, updates: { 
+    name?: string, 
+    payment_template?: string,
+    default_currency?: string
+  }) => {
     try {
       const { data, error } = await supabase
         .from("companies")

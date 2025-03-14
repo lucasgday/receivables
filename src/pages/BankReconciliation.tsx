@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -11,37 +10,12 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BankMovementsList } from "@/components/BankMovementsList";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/hooks/useSettings";
 import { UploadCsv } from "@/components/UploadCsv";
 import { toast } from "sonner";
-
-// Define all supported currencies
-const CURRENCIES = [
-  { value: "USD", label: "USD - US Dollar" },
-  { value: "EUR", label: "EUR - Euro" },
-  { value: "GBP", label: "GBP - British Pound" },
-  { value: "CAD", label: "CAD - Canadian Dollar" },
-  { value: "AUD", label: "AUD - Australian Dollar" },
-  { value: "JPY", label: "JPY - Japanese Yen" },
-  { value: "CHF", label: "CHF - Swiss Franc" },
-  { value: "CNY", label: "CNY - Chinese Yuan" },
-  { value: "INR", label: "INR - Indian Rupee" },
-  { value: "BRL", label: "BRL - Brazilian Real" },
-  { value: "MXN", label: "MXN - Mexican Peso" },
-  { value: "NZD", label: "NZD - New Zealand Dollar" },
-  { value: "SGD", label: "SGD - Singapore Dollar" },
-  { value: "HKD", label: "HKD - Hong Kong Dollar" },
-  { value: "SEK", label: "SEK - Swedish Krona" },
-  { value: "NOK", label: "NOK - Norwegian Krone" },
-  { value: "DKK", label: "DKK - Danish Krone" },
-  { value: "PLN", label: "PLN - Polish Zloty" },
-  { value: "ZAR", label: "ZAR - South African Rand" },
-  { value: "RUB", label: "RUB - Russian Ruble" },
-];
 
 const BankReconciliation = () => {
   const { user } = useAuth();
@@ -55,16 +29,32 @@ const BankReconciliation = () => {
       const defaultCompany = settings.companies.find(c => c.id === settings.default_company);
       if (defaultCompany) {
         setSelectedCompany(defaultCompany.id);
+        if (defaultCompany.default_currency) {
+          setCurrency(defaultCompany.default_currency);
+        }
       } else {
         setSelectedCompany(settings.companies[0].id);
+        if (settings.companies[0].default_currency) {
+          setCurrency(settings.companies[0].default_currency);
+        }
       }
     }
     
-    // Set default currency from settings if available
-    if (settings?.default_currency) {
+    if (settings?.default_currency && !currency) {
       setCurrency(settings.default_currency);
     }
   }, [settings]);
+  
+  const handleCompanyChange = (companyId: string) => {
+    setSelectedCompany(companyId);
+    
+    if (settings?.companies) {
+      const company = settings.companies.find(c => c.id === companyId);
+      if (company?.default_currency) {
+        setCurrency(company.default_currency);
+      }
+    }
+  };
   
   return (
     <SidebarProvider>
@@ -91,7 +81,7 @@ const BankReconciliation = () => {
                     <Select
                       disabled={isLoadingSettings || !settings?.companies?.length || isImporting}
                       value={selectedCompany || ""}
-                      onValueChange={setSelectedCompany}
+                      onValueChange={handleCompanyChange}
                     >
                       <SelectTrigger id="company">
                         <SelectValue placeholder="Select a company" />
@@ -135,11 +125,62 @@ const BankReconciliation = () => {
                         <SelectValue placeholder="Select currency" />
                       </SelectTrigger>
                       <SelectContent className="max-h-[240px]">
-                        {CURRENCIES.map(currency => (
-                          <SelectItem key={currency.value} value={currency.value}>
-                            {currency.label}
-                          </SelectItem>
-                        ))}
+                        {settings?.enabled_currencies && settings.enabled_currencies.length > 0 ? (
+                          settings.enabled_currencies.map(currencyCode => {
+                            const currencyInfo = [
+                              { value: "USD", label: "USD - US Dollar" },
+                              { value: "EUR", label: "EUR - Euro" },
+                              { value: "GBP", label: "GBP - British Pound" },
+                              { value: "CAD", label: "CAD - Canadian Dollar" },
+                              { value: "AUD", label: "AUD - Australian Dollar" },
+                              { value: "JPY", label: "JPY - Japanese Yen" },
+                              { value: "ARS", label: "ARS - Argentine Peso" },
+                              { value: "BOB", label: "BOB - Bolivian Boliviano" },
+                              { value: "BRL", label: "BRL - Brazilian Real" },
+                              { value: "CLP", label: "CLP - Chilean Peso" },
+                              { value: "COP", label: "COP - Colombian Peso" },
+                              { value: "CRC", label: "CRC - Costa Rican Colón" },
+                              { value: "DOP", label: "DOP - Dominican Peso" },
+                              { value: "GTQ", label: "GTQ - Guatemalan Quetzal" },
+                              { value: "HNL", label: "HNL - Honduran Lempira" },
+                              { value: "MXN", label: "MXN - Mexican Peso" },
+                              { value: "NIO", label: "NIO - Nicaraguan Córdoba" },
+                              { value: "PAB", label: "PAB - Panamanian Balboa" },
+                              { value: "PEN", label: "PEN - Peruvian Sol" },
+                              { value: "PYG", label: "PYG - Paraguayan Guaraní" },
+                              { value: "UYU", label: "UYU - Uruguayan Peso" },
+                              { value: "VES", label: "VES - Venezuelan Bolívar" },
+                              { value: "CHF", label: "CHF - Swiss Franc" },
+                              { value: "CNY", label: "CNY - Chinese Yuan" },
+                              { value: "INR", label: "INR - Indian Rupee" },
+                              { value: "NZD", label: "NZD - New Zealand Dollar" },
+                              { value: "SGD", label: "SGD - Singapore Dollar" },
+                              { value: "HKD", label: "HKD - Hong Kong Dollar" },
+                              { value: "SEK", label: "SEK - Swedish Krona" },
+                              { value: "NOK", label: "NOK - Norwegian Krone" },
+                              { value: "DKK", label: "DKK - Danish Krone" },
+                              { value: "PLN", label: "PLN - Polish Zloty" },
+                              { value: "ZAR", label: "ZAR - South African Rand" },
+                              { value: "RUB", label: "RUB - Russian Ruble" },
+                            ].find(c => c.value === currencyCode);
+                            
+                            return (
+                              <SelectItem key={currencyCode} value={currencyCode}>
+                                {currencyInfo?.label || currencyCode}
+                              </SelectItem>
+                            );
+                          })
+                        ) : (
+                          [
+                            { value: "USD", label: "USD - US Dollar" },
+                            { value: "EUR", label: "EUR - Euro" },
+                            { value: "GBP", label: "GBP - British Pound" },
+                          ].map(currency => (
+                            <SelectItem key={currency.value} value={currency.value}>
+                              {currency.label}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>

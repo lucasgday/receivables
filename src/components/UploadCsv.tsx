@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -71,11 +70,11 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
         throw new Error("CSV file is empty or contains only headers");
       }
       
-      const headers = rows[0].split(',').map(header => header.trim());
+      const headers = rows[0].split(',').map(header => header.trim().toLowerCase());
       
       // Check if required columns exist
-      const requiredColumns = ['date', 'description', 'amount', 'reference'];
-      const missingColumns = requiredColumns.filter(col => !headers.some(h => h.toLowerCase().includes(col)));
+      const requiredColumns = ['date', 'description', 'amount'];
+      const missingColumns = requiredColumns.filter(col => !headers.some(h => h.includes(col)));
       
       if (missingColumns.length > 0) {
         throw new Error(`CSV is missing required columns: ${missingColumns.join(', ')}`);
@@ -85,19 +84,17 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
       
       // Process data
       const movements = [];
-      const dateIndex = headers.findIndex(h => h.toLowerCase().includes('date'));
-      const descriptionIndex = headers.findIndex(h => h.toLowerCase().includes('description'));
-      const amountIndex = headers.findIndex(h => h.toLowerCase().includes('amount'));
-      const referenceIndex = headers.findIndex(h => h.toLowerCase().includes('reference'));
+      const dateIndex = headers.findIndex(h => h.includes('date'));
+      const descriptionIndex = headers.findIndex(h => h.includes('description'));
+      const amountIndex = headers.findIndex(h => h.includes('amount'));
       
-      // Get existing references to avoid duplicates
+      // Get existing references to avoid duplicates (not needed anymore but keep as reference)
       const { data: existingMovements } = await supabase
         .from('bank_movements')
         .select('reference')
         .eq('company_id', companyId);
       
       const existingReferences = new Set((existingMovements || []).map(m => m.reference));
-      let duplicateCount = 0;
       
       setProgress(50);
       
@@ -106,13 +103,10 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
         const values = rows[i].split(',').map(val => val.trim());
         if (values.length !== headers.length) continue;
         
-        const reference = values[referenceIndex];
-        
-        // Skip if this reference already exists
-        if (existingReferences.has(reference)) {
-          duplicateCount++;
-          continue;
-        }
+        // Generate a unique reference ID instead of requiring it from the user
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 8);
+        const reference = `TRANS-${timestamp}-${randomStr}`;
         
         // Parse date
         let date = values[dateIndex];
@@ -126,7 +120,7 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
           console.warn("Could not parse date:", date);
         }
         
-        // Parse amount - fix TypeScript error here
+        // Parse amount
         let amountStr = values[amountIndex].replace(/[^\d.-]/g, '');
         let amount = parseFloat(amountStr);
         
@@ -146,11 +140,7 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
       setProgress(70);
       
       if (movements.length === 0) {
-        if (duplicateCount > 0) {
-          toast.info(`No new movements to import. ${duplicateCount} movement(s) already exist in the database.`);
-        } else {
-          toast.info("No valid movements found to import");
-        }
+        toast.error("No valid movements found to import. Please check your CSV format.");
         setIsUploading(false);
         onImportComplete();
         // Reset the file input
@@ -168,13 +158,12 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
         
         if (error) throw error;
         
-        // Calculate progress percentage correctly as a number
+        // Calculate progress percentage correctly
         setProgress(70 + Math.floor((i / movements.length) * 30));
       }
       
       setProgress(100);
-      toast.success(`Successfully imported ${movements.length} bank movements` + 
-        (duplicateCount > 0 ? ` (${duplicateCount} skipped as duplicates)` : ''));
+      toast.success(`Successfully imported ${movements.length} bank movements`);
     } catch (error) {
       console.error("Error processing CSV:", error);
       toast.error("Failed to process CSV file: " + (error as Error).message);
@@ -200,22 +189,20 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
             <span className="font-semibold">Click to upload</span> or drag and drop
           </p>
           <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
-            <span>CSV file with date, description, amount, and </span>
+            <span>CSV file with date, description, and amount columns</span>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger className="flex items-center">
-                  <span className="underline mx-1">reference</span>
-                  <Info className="h-3 w-3" />
+                  <Info className="h-3 w-3 ml-1" />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="max-w-xs">
-                    The reference column should contain a unique identifier for each transaction
-                    (like transaction ID from your bank). This is used to prevent duplicate imports.
+                    Your CSV should have at least these columns: date, description, and amount.
+                    The system will automatically generate a unique reference ID for each transaction.
                   </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <span> columns</span>
           </div>
           <input
             id="file-upload"
