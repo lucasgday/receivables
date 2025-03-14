@@ -31,6 +31,13 @@ import {
   DialogFooter,
   DialogTrigger
 } from "@/components/ui/dialog";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Settings = () => {
   const { user } = useAuth();
@@ -496,22 +503,25 @@ const Settings = () => {
                   <CardContent className="space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="templateType">Template Type</Label>
-                      <select
-                        id="templateType"
-                        className="w-full p-2 border rounded-md"
+                      <Select
                         value={currentTemplate}
-                        onChange={(e) => setCurrentTemplate(e.target.value)}
+                        onValueChange={(value) => setCurrentTemplate(value)}
                       >
-                        <option value="invoice">Invoice Email</option>
-                        <option value="reminder">Payment Reminder</option>
-                        <option value="receipt">Payment Receipt</option>
-                      </select>
+                        <SelectTrigger id="templateType">
+                          <SelectValue placeholder="Select template type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="invoice">Invoice Email</SelectItem>
+                          <SelectItem value="reminder">Payment Reminder</SelectItem>
+                          <SelectItem value="receipt">Payment Receipt</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="emailTemplate">Email Template</Label>
                       <div className="text-xs text-muted-foreground mb-2">
-                        Available placeholders: {{'{{'}}customer{{'}}'}}, {{'{{'}}invoice_number{{'}}'}}, {{'{{'}}amount{{'}}'}}, {{'{{'}}company{{'}}'}}
+                        Available placeholders: {"{{"} customer {"}}"}, {"{{"} invoice_number {"}}"}, {"{{"} amount {"}}"}, {"{{"} company {"}}"}
                       </div>
                       <Textarea
                         id="emailTemplate"
@@ -539,3 +549,4 @@ const Settings = () => {
 };
 
 export default Settings;
+
