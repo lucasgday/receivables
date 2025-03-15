@@ -58,9 +58,12 @@ export const useSettings = () => {
       }
 
       if (settingsData) {
+        // Since enabled_currencies might not exist in the database yet, we use a custom extension approach
+        const enabledCurrencies = settingsData.enabled_currencies || ["USD", "EUR", "GBP"];
+        
         setSettings({
           ...settingsData,
-          enabled_currencies: settingsData.enabled_currencies || ["USD", "EUR", "GBP"],
+          enabled_currencies: enabledCurrencies,
           companies: companiesData || []
         });
       } else {
@@ -82,9 +85,13 @@ export const useSettings = () => {
           .single();
 
         if (insertError) throw insertError;
+        
+        // Again, handle enabled_currencies which might not exist in the database schema yet
+        const enabledCurrencies = newSettings.enabled_currencies || ["USD", "EUR", "GBP"];
+        
         setSettings({
           ...newSettings,
-          enabled_currencies: newSettings.enabled_currencies || ["USD", "EUR", "GBP"],
+          enabled_currencies: enabledCurrencies,
           companies: companiesData || []
         });
       }

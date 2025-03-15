@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -38,10 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Checkbox,
-  CheckboxIndicator,
-} from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const CURRENCIES = [
@@ -659,11 +655,7 @@ const Settings = () => {
                             <Checkbox 
                               checked={enabledCurrencies.includes(currency.value)}
                               onCheckedChange={() => toggleCurrency(currency.value)}
-                            >
-                              <CheckboxIndicator>
-                                <Check className="h-4 w-4" />
-                              </CheckboxIndicator>
-                            </Checkbox>
+                            />
                             <span>{currency.label}</span>
                           </div>
                         ))}
@@ -749,11 +741,7 @@ const Settings = () => {
                     <Checkbox 
                       checked={enabledCurrencies.includes(currency.value)}
                       onCheckedChange={() => toggleCurrency(currency.value)}
-                    >
-                      <CheckboxIndicator>
-                        <Check className="h-4 w-4" />
-                      </CheckboxIndicator>
-                    </Checkbox>
+                    />
                     <span>{currency.label}</span>
                   </div>
                 ))}
