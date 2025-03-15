@@ -21,6 +21,11 @@ export const useInvoiceActions = () => {
 
     setIsLoading(true);
     try {
+      // Handle empty category selection
+      if (invoiceData.category_id === "no-category" || invoiceData.category_id === "") {
+        invoiceData.category_id = null;
+      }
+
       const { data, error } = await supabase
         .from("invoices")
         .insert({
@@ -56,6 +61,11 @@ export const useInvoiceActions = () => {
 
     setIsLoading(true);
     try {
+      // Handle empty category selection
+      if (invoiceData.category_id === "no-category" || invoiceData.category_id === "") {
+        invoiceData.category_id = null;
+      }
+
       const { data, error } = await supabase
         .from("invoices")
         .update(invoiceData)

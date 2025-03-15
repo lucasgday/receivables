@@ -4,6 +4,7 @@ import { InvoiceForm } from "./InvoiceForm";
 import { Tables } from "@/integrations/supabase/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 type Invoice = Tables<"invoices">;
 
@@ -21,17 +22,26 @@ export function EditInvoiceSheet({
   invoice 
 }: EditInvoiceSheetProps) {
   const [formKey, setFormKey] = useState(Date.now());
+  const [error, setError] = useState<string | null>(null);
   
   // Reset form when new invoice is loaded or sheet opens
   useEffect(() => {
     if (open && invoice) {
+      // Reset any previous errors
+      setError(null);
       setFormKey(Date.now());
     }
   }, [invoice, open]);
 
   const handleSuccess = () => {
-    onInvoiceUpdated();
-    onOpenChange(false);
+    try {
+      onInvoiceUpdated();
+      onOpenChange(false);
+    } catch (err) {
+      console.error("Error in handleSuccess:", err);
+      setError("An error occurred after updating the invoice");
+      toast.error("An unexpected error occurred");
+    }
   };
 
   return (
@@ -44,6 +54,12 @@ export function EditInvoiceSheet({
           </SheetDescription>
         </SheetHeader>
         <div className="mt-6">
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              {error}
+            </div>
+          )}
+          
           {open && (
             invoice ? (
               <InvoiceForm 
