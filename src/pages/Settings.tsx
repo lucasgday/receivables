@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -728,4 +729,50 @@ const Settings = () => {
         </main>
       </div>
       
-      <
+      <Dialog open={isCurrencyDialogOpen} onOpenChange={setIsCurrencyDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Available Currencies</DialogTitle>
+            <DialogDescription>
+              Select which currencies you want to make available throughout the application.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <ScrollArea className="h-[60vh] pr-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {CURRENCIES.map((currency) => (
+                  <div 
+                    key={currency.value} 
+                    className="flex items-center space-x-2 p-2 border rounded hover:bg-muted/40 cursor-pointer"
+                    onClick={() => toggleCurrency(currency.value)}
+                  >
+                    <Checkbox 
+                      checked={enabledCurrencies.includes(currency.value)}
+                      onCheckedChange={() => toggleCurrency(currency.value)}
+                    >
+                      <CheckboxIndicator>
+                        <Check className="h-4 w-4" />
+                      </CheckboxIndicator>
+                    </Checkbox>
+                    <span>{currency.label}</span>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCurrencyDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              saveInvoiceSettings();
+              setIsCurrencyDialogOpen(false);
+            }}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </SidebarProvider>
+  );
+};
+
+export default Settings;
