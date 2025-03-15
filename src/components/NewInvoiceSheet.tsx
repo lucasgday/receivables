@@ -1,7 +1,7 @@
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { InvoiceForm } from "./InvoiceForm";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface NewInvoiceSheetProps {
@@ -22,13 +22,12 @@ export function NewInvoiceSheet({
   const [formKey, setFormKey] = useState(Date.now());
 
   // Reset form when sheet opens
-  const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
+  useEffect(() => {
+    if (open) {
       // Generate a new key to force a form reset
       setFormKey(Date.now());
     }
-    onOpenChange(newOpen);
-  };
+  }, [open]);
 
   const handleSuccess = () => {
     onInvoiceCreated();
@@ -36,7 +35,7 @@ export function NewInvoiceSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={handleOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto sm:max-w-xl w-full">
         <SheetHeader>
           <SheetTitle>Create New Invoice</SheetTitle>

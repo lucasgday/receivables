@@ -11,6 +11,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AddCustomerSheet } from "@/components/AddCustomerSheet";
+import { NewInvoiceSheet } from "@/components/NewInvoiceSheet";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -24,6 +25,7 @@ const Index = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
   const navigate = useNavigate();
 
   const fetchDashboardData = useCallback(async () => {
@@ -44,9 +46,10 @@ const Index = () => {
 
       if (invoicesError) throw invoicesError;
 
-      const unpaidInvoices = invoices.filter(
+      const unpaidInvoices = invoices?.filter(
         (inv) => inv.status !== "Paid" && inv.status !== "paid"
-      );
+      ) || [];
+      
       const totalReceivables = unpaidInvoices.reduce(
         (sum, inv) => sum + Number(inv.amount),
         0
@@ -54,21 +57,22 @@ const Index = () => {
 
       const openInvoices = unpaidInvoices.length;
 
-      const paidInvoices = invoices.filter(
+      const paidInvoices = invoices?.filter(
         (inv) => inv.status === "Paid" || inv.status === "paid"
-      );
-      const collectionRate = invoices.length > 0
+      ) || [];
+      
+      const collectionRate = invoices?.length > 0
         ? Math.round((paidInvoices.length / invoices.length) * 100)
         : 0;
 
       setDashboardData({
         totalReceivables,
         openInvoices,
-        activeCustomers: customers.length,
+        activeCustomers: customers?.length || 0,
         collectionRate,
       });
 
-      if (customers.length === 0) {
+      if (customers?.length === 0) {
         setShowOnboarding(true);
       }
     } catch (error) {
@@ -83,6 +87,14 @@ const Index = () => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
+  const handleNewInvoice = () => {
+    setNewInvoiceOpen(true);
+  };
+
+  const handleInvoiceCreated = () => {
+    fetchDashboardData(); // Refresh data after invoice is created
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -96,7 +108,7 @@ const Index = () => {
                 <Button onClick={() => setAddCustomerOpen(true)}>
                   Add Customer
                 </Button>
-                <Button onClick={() => navigate("/invoices")}>
+                <Button onClick={handleNewInvoice}>
                   New Invoice
                 </Button>
               </div>
@@ -164,6 +176,12 @@ const Index = () => {
             setAddCustomerOpen(false);
             fetchDashboardData();
           }}
+        />
+        
+        <NewInvoiceSheet
+          open={newInvoiceOpen}
+          onOpenChange={setNewInvoiceOpen}
+          onInvoiceCreated={handleInvoiceCreated}
         />
         
         {showOnboarding && (

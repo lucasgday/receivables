@@ -22,12 +22,12 @@ export function EditInvoiceSheet({
 }: EditInvoiceSheetProps) {
   const [formKey, setFormKey] = useState(Date.now());
   
-  // Reset form when new invoice is loaded
+  // Reset form when new invoice is loaded or sheet opens
   useEffect(() => {
-    if (invoice) {
+    if (open && invoice) {
       setFormKey(Date.now());
     }
-  }, [invoice]);
+  }, [invoice, open]);
 
   const handleSuccess = () => {
     onInvoiceUpdated();
