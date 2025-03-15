@@ -26,6 +26,18 @@ export interface UserSettings {
   updated_at?: string;
 }
 
+// This interface represents what we get directly from the database
+interface DatabaseUserSettings {
+  id: string;
+  user_id: string;
+  show_currency: boolean;
+  show_company: boolean;
+  default_currency: string;
+  default_company: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export const useSettings = () => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,12 +70,12 @@ export const useSettings = () => {
       }
 
       if (settingsData) {
-        // Since enabled_currencies might not exist in the database yet, we use a custom extension approach
-        const enabledCurrencies = settingsData.enabled_currencies || ["USD", "EUR", "GBP"];
+        // Set default enabled currencies since this field isn't in the database yet
+        const defaultEnabledCurrencies = ["USD", "EUR", "GBP"];
         
         setSettings({
           ...settingsData,
-          enabled_currencies: enabledCurrencies,
+          enabled_currencies: defaultEnabledCurrencies,
           companies: companiesData || []
         });
       } else {
@@ -86,12 +98,9 @@ export const useSettings = () => {
 
         if (insertError) throw insertError;
         
-        // Again, handle enabled_currencies which might not exist in the database schema yet
-        const enabledCurrencies = newSettings.enabled_currencies || ["USD", "EUR", "GBP"];
-        
         setSettings({
           ...newSettings,
-          enabled_currencies: enabledCurrencies,
+          enabled_currencies: ["USD", "EUR", "GBP"], // Add enabled_currencies since it's not in the DB
           companies: companiesData || []
         });
       }
@@ -107,9 +116,13 @@ export const useSettings = () => {
     if (!settings?.id) return null;
     
     try {
+      // Create a copy of updatedSettings without enabled_currencies
+      // since this field doesn't exist in the database yet
+      const { enabled_currencies, companies, ...dbUpdateSettings } = updatedSettings;
+      
       const { data, error } = await supabase
         .from("user_settings")
-        .update(updatedSettings)
+        .update(dbUpdateSettings)
         .eq("id", settings.id)
         .select()
         .single();
