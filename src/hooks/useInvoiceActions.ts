@@ -14,6 +14,11 @@ export const useInvoiceActions = () => {
       return null;
     }
 
+    if (!invoiceData.customer_id) {
+      toast.error("Customer is required");
+      return null;
+    }
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -29,9 +34,9 @@ export const useInvoiceActions = () => {
 
       toast.success("Invoice created successfully");
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating invoice:", error);
-      toast.error("Failed to create invoice");
+      toast.error(error.message || "Failed to create invoice");
       return null;
     } finally {
       setIsLoading(false);
@@ -41,6 +46,11 @@ export const useInvoiceActions = () => {
   const updateInvoice = async (invoiceId: string, invoiceData: any) => {
     if (!user && !import.meta.env.DEV) {
       toast.error("You must be logged in to update an invoice");
+      return null;
+    }
+
+    if (!invoiceId) {
+      toast.error("Invoice ID is required");
       return null;
     }
 
@@ -57,9 +67,43 @@ export const useInvoiceActions = () => {
 
       toast.success("Invoice updated successfully");
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating invoice:", error);
-      toast.error("Failed to update invoice");
+      toast.error(error.message || "Failed to update invoice");
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getInvoice = async (invoiceId: string) => {
+    if (!invoiceId) {
+      toast.error("Invoice ID is required");
+      return null;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select(`
+          *,
+          customers (
+            name
+          ),
+          categories (
+            name
+          )
+        `)
+        .eq("id", invoiceId)
+        .single();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error: any) {
+      console.error("Error fetching invoice:", error);
+      toast.error(error.message || "Failed to fetch invoice");
       return null;
     } finally {
       setIsLoading(false);
@@ -69,6 +113,7 @@ export const useInvoiceActions = () => {
   return {
     createInvoice,
     updateInvoice,
+    getInvoice,
     isLoading
   };
 };

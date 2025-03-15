@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { InvoiceForm } from "./InvoiceForm";
 import { Tables } from "@/integrations/supabase/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState, useEffect } from "react";
 
 type Invoice = Tables<"invoices">;
 
@@ -19,6 +20,20 @@ export function EditInvoiceSheet({
   onInvoiceUpdated, 
   invoice 
 }: EditInvoiceSheetProps) {
+  const [formKey, setFormKey] = useState(Date.now());
+  
+  // Reset form when new invoice is loaded
+  useEffect(() => {
+    if (invoice) {
+      setFormKey(Date.now());
+    }
+  }, [invoice]);
+
+  const handleSuccess = () => {
+    onInvoiceUpdated();
+    onOpenChange(false);
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto sm:max-w-xl w-full">
@@ -32,11 +47,9 @@ export function EditInvoiceSheet({
           {open && (
             invoice ? (
               <InvoiceForm 
+                key={formKey}
                 invoice={invoice} 
-                onSuccess={() => {
-                  onInvoiceUpdated();
-                  onOpenChange(false);
-                }}
+                onSuccess={handleSuccess}
               />
             ) : (
               <div className="space-y-4">

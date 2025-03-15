@@ -1,17 +1,42 @@
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { InvoiceForm } from "./InvoiceForm";
+import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface NewInvoiceSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onInvoiceCreated: () => void;
   customerId?: string;
+  isLoading?: boolean;
 }
 
-export function NewInvoiceSheet({ open, onOpenChange, onInvoiceCreated, customerId }: NewInvoiceSheetProps) {
+export function NewInvoiceSheet({ 
+  open, 
+  onOpenChange, 
+  onInvoiceCreated, 
+  customerId,
+  isLoading = false
+}: NewInvoiceSheetProps) {
+  const [formKey, setFormKey] = useState(Date.now());
+
+  // Reset form when sheet opens
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen) {
+      // Generate a new key to force a form reset
+      setFormKey(Date.now());
+    }
+    onOpenChange(newOpen);
+  };
+
+  const handleSuccess = () => {
+    onInvoiceCreated();
+    onOpenChange(false);
+  };
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent className="overflow-y-auto sm:max-w-xl w-full">
         <SheetHeader>
           <SheetTitle>Create New Invoice</SheetTitle>
@@ -20,13 +45,17 @@ export function NewInvoiceSheet({ open, onOpenChange, onInvoiceCreated, customer
           </SheetDescription>
         </SheetHeader>
         <div className="mt-6">
-          {open && (
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : open && (
             <InvoiceForm 
+              key={formKey}
               customerId={customerId} 
-              onSuccess={() => {
-                onInvoiceCreated();
-                onOpenChange(false);
-              }}
+              onSuccess={handleSuccess}
             />
           )}
         </div>
