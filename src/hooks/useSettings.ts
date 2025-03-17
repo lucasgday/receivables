@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -72,7 +71,7 @@ export const useSettings = () => {
       if (settingsData) {
         // Set default enabled currencies since this field isn't in the database yet
         const defaultEnabledCurrencies = ["USD", "EUR", "GBP"];
-        
+
         setSettings({
           ...settingsData,
           enabled_currencies: defaultEnabledCurrencies,
@@ -97,7 +96,7 @@ export const useSettings = () => {
           .single();
 
         if (insertError) throw insertError;
-        
+
         setSettings({
           ...newSettings,
           enabled_currencies: ["USD", "EUR", "GBP"], // Add enabled_currencies since it's not in the DB
@@ -114,12 +113,12 @@ export const useSettings = () => {
 
   const updateSettings = async (updatedSettings: Partial<UserSettings>) => {
     if (!settings?.id) return null;
-    
+
     try {
       // Create a copy of updatedSettings without enabled_currencies
       // since this field doesn't exist in the database yet
       const { enabled_currencies, companies, ...dbUpdateSettings } = updatedSettings;
-      
+
       const { data, error } = await supabase
         .from("user_settings")
         .update(dbUpdateSettings)
@@ -140,13 +139,13 @@ export const useSettings = () => {
     }
   };
 
-  const addCompany = async (company: { 
-    name: string, 
+  const addCompany = async (company: {
+    name: string,
     payment_template: string,
     default_currency?: string
   }) => {
     if (!user) return null;
-    
+
     try {
       const { data, error } = await supabase
         .from("companies")
@@ -160,7 +159,7 @@ export const useSettings = () => {
         .single();
 
       if (error) throw error;
-      
+
       // Refresh settings to get the updated companies list
       await fetchSettings();
       toast.success("Company added successfully");
@@ -172,8 +171,8 @@ export const useSettings = () => {
     }
   };
 
-  const updateCompany = async (id: string, updates: { 
-    name?: string, 
+  const updateCompany = async (id: string, updates: {
+    name?: string,
     payment_template?: string,
     default_currency?: string
   }) => {
@@ -186,7 +185,7 @@ export const useSettings = () => {
         .single();
 
       if (error) throw error;
-      
+
       // Refresh settings to get the updated companies list
       await fetchSettings();
       toast.success("Company updated successfully");
@@ -206,7 +205,7 @@ export const useSettings = () => {
         .eq("id", id);
 
       if (error) throw error;
-      
+
       // Refresh settings to get the updated companies list
       await fetchSettings();
       toast.success("Company deleted successfully");
@@ -215,6 +214,24 @@ export const useSettings = () => {
       console.error("Error deleting company:", error);
       toast.error("Failed to delete company");
       return false;
+    }
+  };
+
+  const updateEnabledCurrencies = async (newCurrencies: string[]) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("user_settings")
+        .update({ enabled_currencies: newCurrencies })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setSettings((prev) => (prev ? { ...prev, enabled_currencies: newCurrencies } : prev));
+    } catch (error) {
+      console.error("Error updating enabled currencies:", error);
     }
   };
 
@@ -229,6 +246,7 @@ export const useSettings = () => {
     refreshSettings: fetchSettings,
     addCompany,
     updateCompany,
-    deleteCompany
+    deleteCompany,
+    updateEnabledCurrencies
   };
 };

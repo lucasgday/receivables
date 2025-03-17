@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -25,6 +24,7 @@ import { Badge } from "./ui/badge";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { NewInvoiceSheet } from "./NewInvoiceSheet";
+import { LogNotes } from "./LogNotes";
 
 type Customer = Tables<"customers">;
 type Invoice = Tables<"invoices">;
@@ -46,7 +46,7 @@ export const CustomerDetails = ({
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
-  
+
   const form = useForm<Customer>({
     defaultValues: customer || undefined,
   });
@@ -84,7 +84,7 @@ export const CustomerDetails = ({
   useEffect(() => {
     const fetchInvoices = async () => {
       if (!customer) return;
-      
+
       try {
         const { data, error } = await supabase
           .from("invoices")
@@ -107,7 +107,7 @@ export const CustomerDetails = ({
 
   const onSubmit = async (data: Customer) => {
     if (!customer) return;
-    
+
     try {
       const { error } = await supabase
         .from("customers")
@@ -172,7 +172,7 @@ export const CustomerDetails = ({
 
   const refreshInvoices = async () => {
     if (!customer) return;
-    
+
     try {
       const { data, error } = await supabase
         .from("invoices")
@@ -242,7 +242,7 @@ export const CustomerDetails = ({
                     )}
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -271,7 +271,7 @@ export const CustomerDetails = ({
                     )}
                   />
                 </div>
-                
+
                 <FormField
                   control={form.control}
                   name="address"
@@ -285,7 +285,7 @@ export const CustomerDetails = ({
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
@@ -327,7 +327,7 @@ export const CustomerDetails = ({
                     )}
                   />
                 </div>
-                
+
                 <FormField
                   control={form.control}
                   name="status"
@@ -350,7 +350,7 @@ export const CustomerDetails = ({
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="notes"
@@ -364,7 +364,7 @@ export const CustomerDetails = ({
                     </FormItem>
                   )}
                 />
-                
+
                 <Button type="submit" className="mt-6">Save Changes</Button>
               </form>
             </Form>
@@ -381,7 +381,7 @@ export const CustomerDetails = ({
                     <p className="mt-1">{customer.contact || "N/A"}</p>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
@@ -392,12 +392,12 @@ export const CustomerDetails = ({
                     <p className="mt-1">{customer.phone || "N/A"}</p>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Address</h3>
                   <p className="mt-1">{customer.address || "N/A"}</p>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground">City</h3>
@@ -412,12 +412,12 @@ export const CustomerDetails = ({
                     <p className="mt-1">{customer.zip || "N/A"}</p>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
                   <p className="mt-1">{customer.status || "Active"}</p>
                 </div>
-                
+
                 {customer.notes && (
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground">Notes</h3>
@@ -480,9 +480,10 @@ export const CustomerDetails = ({
             </>
           )}
         </div>
+        <LogNotes customerId={customer.id} />
       </SheetContent>
-      
-      <NewInvoiceSheet 
+
+      <NewInvoiceSheet
         open={newInvoiceOpen}
         onOpenChange={setNewInvoiceOpen}
         onInvoiceCreated={refreshInvoices}

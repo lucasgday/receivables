@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { FileDown, Printer, Mail } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { toast } from "sonner";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
@@ -20,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useSettings } from "@/hooks/useSettings";
+import { LogNotes } from "./LogNotes";
 
 type Invoice = Tables<"invoices"> & {
   customers: {
@@ -76,12 +76,12 @@ export const InvoicePDF = () => {
         if (error) throw error;
 
         setInvoice(data);
-        
+
         // Pre-populate email fields if customer has an email
         if (data.customers?.email) {
           setEmailTo(data.customers.email);
           setEmailSubject(`Invoice #${data.invoice_number} from ${data.invoicing_company || 'us'}`);
-          
+
           // Generate default email body
           const amount = formatCurrency(Number(data.amount), data.currency || "USD");
           const company = data.invoicing_company || settings?.default_company || "us";
@@ -122,10 +122,10 @@ export const InvoicePDF = () => {
 
     html2pdf().set(opt).from(element).save();
   };
-  
+
   const sendInvoiceEmail = async () => {
     if (!invoice) return;
-    
+
     setIsSending(true);
     try {
       // Generate PDF
@@ -137,25 +137,25 @@ export const InvoicePDF = () => {
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
-      
+
       // In a real application, you would:
       // 1. Send the PDF to a backend service
       // 2. Have the backend service send the email with the PDF attached
-      
+
       // For now, we'll simulate a successful email send
       setTimeout(() => {
         setIsSending(false);
         setIsEmailDialogOpen(false);
         toast.success(`Invoice sent to ${emailTo}`);
       }, 1500);
-      
+
     } catch (error) {
       console.error("Error sending invoice:", error);
       toast.error("Failed to send invoice");
       setIsSending(false);
     }
   };
-  
+
   const openEmailDialog = () => {
     if (!invoice?.customers?.email) {
       toast.warning("Customer has no email address");
@@ -243,20 +243,20 @@ export const InvoicePDF = () => {
               <div className="grid grid-cols-2 gap-1 text-sm">
                 <p className="font-medium">Invoice Date:</p>
                 <p>{formatDate(invoice.issued_date)}</p>
-                
+
                 <p className="font-medium">Due Date:</p>
                 <p>{formatDate(invoice.due_date)}</p>
-                
+
                 <p className="font-medium">Status:</p>
                 <p>{invoice.status}</p>
-                
+
                 {invoice.status === "Paid" && invoice.paid_date && (
                   <>
                     <p className="font-medium">Paid On:</p>
                     <p>{formatDate(invoice.paid_date)}</p>
                   </>
                 )}
-                
+
                 {invoice.categories?.name && (
                   <>
                     <p className="font-medium">Category:</p>
@@ -266,7 +266,7 @@ export const InvoicePDF = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="mt-8">
             <div className="border rounded-lg overflow-hidden">
               <table className="w-full">
@@ -302,7 +302,7 @@ export const InvoicePDF = () => {
               </table>
             </div>
           </div>
-          
+
           <div className="mt-8">
             <h3 className="font-semibold mb-2">Payment Information:</h3>
             <p className="text-sm">
@@ -316,7 +316,7 @@ export const InvoicePDF = () => {
           </p>
         </CardFooter>
       </Card>
-      
+
       <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -361,6 +361,7 @@ export const InvoicePDF = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <LogNotes invoiceId={invoice.id} />
     </div>
   );
 };

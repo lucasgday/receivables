@@ -21,16 +21,16 @@ import { useSettings, InvoicingCompany } from "@/hooks/useSettings";
 import { useTheme } from "next-themes";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Pencil, Trash2, Check } from "lucide-react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogDescription,
   DialogFooter,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { UsersTab } from "./UsersTab";
 
 const CURRENCIES = [
   { value: "USD", label: "USD - US Dollar" },
@@ -88,7 +89,7 @@ const Settings = () => {
   const [showCurrency, setShowCurrency] = useState(true);
   const [showCompany, setShowCompany] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  
+
   const [newCompanyName, setNewCompanyName] = useState("");
   const [newCompanyTemplate, setNewCompanyTemplate] = useState("");
   const [newCompanyCurrency, setNewCompanyCurrency] = useState("USD");
@@ -98,27 +99,28 @@ const Settings = () => {
   const [editCompanyCurrency, setEditCompanyCurrency] = useState("USD");
   const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  
+
   const [enabledCurrencies, setEnabledCurrencies] = useState<string[]>(["USD", "EUR", "GBP"]);
   const [isCurrencyDialogOpen, setIsCurrencyDialogOpen] = useState(false);
-  
+
   const [emailTemplates, setEmailTemplates] = useState<{[key: string]: string}>({
     invoice: "Dear {{customer}},\n\nPlease find attached invoice #{{invoice_number}} for {{amount}}.\n\nThank you for your business.\n\nBest regards,\n{{company}}"
   });
   const [currentTemplate, setCurrentTemplate] = useState("invoice");
-  
+  const [activeTab, setActiveTab] = useState("general");
+
   useEffect(() => {
     if (settings) {
       setDefaultCurrency(settings.default_currency || "USD");
       setDefaultCompany(settings.default_company || "");
       setShowCurrency(settings.show_currency);
       setShowCompany(settings.show_company);
-      
+
       if (settings.enabled_currencies && Array.isArray(settings.enabled_currencies)) {
         setEnabledCurrencies(settings.enabled_currencies);
       }
     }
-    
+
     setIsDarkMode(theme === "dark");
   }, [settings, theme]);
 
@@ -135,56 +137,56 @@ const Settings = () => {
       enabled_currencies: enabledCurrencies
     });
   };
-  
+
   const saveEmailTemplate = () => {
     const updatedTemplates = { ...emailTemplates };
     updatedTemplates[currentTemplate] = emailTemplates[currentTemplate];
     setEmailTemplates(updatedTemplates);
     toast.success("Email template saved successfully");
   };
-  
+
   const toggleDarkMode = (checked: boolean) => {
     setIsDarkMode(checked);
     setTheme(checked ? "dark" : "light");
   };
-  
+
   const handleAddCompany = async () => {
     if (newCompanyName.trim() === "") {
       toast.error("Company name cannot be empty");
       return;
     }
-    
+
     await addCompany({
       name: newCompanyName,
       payment_template: newCompanyTemplate,
       default_currency: newCompanyCurrency
     });
-    
+
     setNewCompanyName("");
     setNewCompanyTemplate("");
     setNewCompanyCurrency("USD");
     setIsCompanyDialogOpen(false);
   };
-  
+
   const handleEditCompany = async () => {
     if (!editCompanyId || editCompanyName.trim() === "") {
       toast.error("Company name cannot be empty");
       return;
     }
-    
+
     await updateCompany(editCompanyId, {
       name: editCompanyName,
       payment_template: editCompanyTemplate,
       default_currency: editCompanyCurrency
     });
-    
+
     setEditCompanyId(null);
     setEditCompanyName("");
     setEditCompanyTemplate("");
     setEditCompanyCurrency("USD");
     setIsEditDialogOpen(false);
   };
-  
+
   const startEditCompany = (company: InvoicingCompany) => {
     setEditCompanyId(company.id);
     setEditCompanyName(company.name);
@@ -192,13 +194,13 @@ const Settings = () => {
     setEditCompanyCurrency(company.default_currency || "USD");
     setIsEditDialogOpen(true);
   };
-  
+
   const handleDeleteCompany = async (id: string) => {
     if (confirm("Are you sure you want to delete this company?")) {
       await deleteCompany(id);
     }
   };
-  
+
   const toggleCurrency = (currency: string) => {
     setEnabledCurrencies(prev => {
       if (prev.includes(currency)) {
@@ -220,8 +222,9 @@ const Settings = () => {
 
             <Tabs defaultValue="general" className="w-full">
               <TabsList className="mb-6">
-                <TabsTrigger value="general">General</TabsTrigger>
-                <TabsTrigger value="account">Account</TabsTrigger>
+                <TabsTrigger value="general" onClick={() => setActiveTab("general")}>General</TabsTrigger>
+                <TabsTrigger value="account" onClick={() => setActiveTab("account")}>Account</TabsTrigger>
+                <TabsTrigger value="users" onClick={() => setActiveTab("users")}>Users</TabsTrigger>
                 <TabsTrigger value="notifications">Notifications</TabsTrigger>
                 <TabsTrigger value="invoices">Invoice Settings</TabsTrigger>
                 <TabsTrigger value="companies">Companies</TabsTrigger>
@@ -240,21 +243,21 @@ const Settings = () => {
                   <CardContent className="space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="companyName">Company Name</Label>
-                      <Input 
-                        id="companyName" 
-                        value={companyName} 
+                      <Input
+                        id="companyName"
+                        value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
                       />
                     </div>
-                    
+
                     <Separator />
-                    
+
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Theme Preferences</h3>
                       <div className="flex items-center justify-between">
                         <Label htmlFor="darkMode">Dark Mode</Label>
-                        <Switch 
-                          id="darkMode" 
+                        <Switch
+                          id="darkMode"
                           checked={isDarkMode}
                           onCheckedChange={toggleDarkMode}
                         />
@@ -278,14 +281,14 @@ const Settings = () => {
                   <CardContent className="space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="email">Email Address</Label>
-                      <Input 
-                        id="email" 
-                        type="email" 
-                        value={email} 
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
                         onChange={(e) => setEmail(e.target.value)}
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="password">Password</Label>
                       <Input id="password" type="password" value="********" readOnly />
@@ -298,6 +301,10 @@ const Settings = () => {
                     <Button onClick={() => toast.success("Account updated")}>Update Account</Button>
                   </CardFooter>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="users">
+                <UsersTab />
               </TabsContent>
 
               <TabsContent value="notifications">
@@ -317,7 +324,7 @@ const Settings = () => {
                         </div>
                         <Switch id="paymentNotifications" defaultChecked />
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-medium">Overdue Invoice Reminders</h4>
@@ -325,7 +332,7 @@ const Settings = () => {
                         </div>
                         <Switch id="overdueNotifications" defaultChecked />
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-medium">System Updates</h4>
@@ -354,39 +361,39 @@ const Settings = () => {
                       <Label htmlFor="paymentTerms">Default Payment Terms (days)</Label>
                       <Input id="paymentTerms" type="number" defaultValue={30} />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="invoicePrefix">Invoice Number Prefix</Label>
                       <Input id="invoicePrefix" defaultValue="INV-" />
                     </div>
-                    
+
                     <div className="space-y-4 mt-6">
                       <h3 className="text-lg font-medium">Invoice Fields</h3>
-                      
+
                       <div className="flex items-center justify-between">
                         <div>
                           <Label htmlFor="showCurrency">Show Currency</Label>
                           <p className="text-sm text-muted-foreground">Display currency on invoices</p>
                         </div>
-                        <Switch 
-                          id="showCurrency" 
+                        <Switch
+                          id="showCurrency"
                           checked={showCurrency}
                           onCheckedChange={setShowCurrency}
                         />
                       </div>
-                      
+
                       {showCurrency && (
                         <div className="space-y-2 pl-6 border-l-2 border-muted ml-2">
                           <Label htmlFor="defaultCurrency">Default Currency</Label>
-                          <Select 
-                            value={defaultCurrency} 
+                          <Select
+                            value={defaultCurrency}
                             onValueChange={setDefaultCurrency}
                           >
                             <SelectTrigger id="defaultCurrency" className="w-full">
                               <SelectValue placeholder="Select currency" />
                             </SelectTrigger>
                             <SelectContent>
-                              {CURRENCIES.filter(c => 
+                              {CURRENCIES.filter(c =>
                                 enabledCurrencies.includes(c.value)
                               ).map(currency => (
                                 <SelectItem key={currency.value} value={currency.value}>
@@ -396,8 +403,8 @@ const Settings = () => {
                             </SelectContent>
                           </Select>
                           <div className="mt-2">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => setIsCurrencyDialogOpen(true)}
                             >
@@ -406,23 +413,23 @@ const Settings = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       <div className="flex items-center justify-between">
                         <div>
                           <Label htmlFor="showCompany">Show Invoicing Company</Label>
                           <p className="text-sm text-muted-foreground">Display your company name on invoices</p>
                         </div>
-                        <Switch 
-                          id="showCompany" 
+                        <Switch
+                          id="showCompany"
                           checked={showCompany}
                           onCheckedChange={setShowCompany}
                         />
                       </div>
-                      
+
                       {showCompany && (
                         <div className="space-y-2 pl-6 border-l-2 border-muted ml-2">
                           <Label htmlFor="defaultCompany">Default Company</Label>
-                          <Select 
+                          <Select
                             value={defaultCompany || ""}
                             onValueChange={setDefaultCompany}
                             disabled={!settings?.companies?.length}
@@ -441,7 +448,7 @@ const Settings = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <div>
                         <Label htmlFor="automaticReminders">Automatic Reminders</Label>
@@ -455,7 +462,7 @@ const Settings = () => {
                   </CardFooter>
                 </Card>
               </TabsContent>
-              
+
               <TabsContent value="companies">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
@@ -499,7 +506,7 @@ const Settings = () => {
                                 <SelectValue placeholder="Select currency" />
                               </SelectTrigger>
                               <SelectContent>
-                                {CURRENCIES.filter(c => 
+                                {CURRENCIES.filter(c =>
                                   enabledCurrencies.includes(c.value)
                                 ).map(currency => (
                                   <SelectItem key={currency.value} value={currency.value}>
@@ -602,7 +609,7 @@ const Settings = () => {
                             <SelectValue placeholder="Select currency" />
                           </SelectTrigger>
                           <SelectContent>
-                            {CURRENCIES.filter(c => 
+                            {CURRENCIES.filter(c =>
                               enabledCurrencies.includes(c.value)
                             ).map(currency => (
                               <SelectItem key={currency.value} value={currency.value}>
@@ -629,7 +636,7 @@ const Settings = () => {
                   </DialogContent>
                 </Dialog>
               </TabsContent>
-              
+
               <TabsContent value="currencies">
                 <Card>
                   <CardHeader>
@@ -644,15 +651,15 @@ const Settings = () => {
                         Select the currencies you want to make available for invoices and bank movements.
                         These currencies will be shown in dropdown menus across the application.
                       </p>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                         {CURRENCIES.map((currency) => (
-                          <div 
-                            key={currency.value} 
+                          <div
+                            key={currency.value}
                             className="flex items-center space-x-2 p-2 border rounded hover:bg-muted/40 cursor-pointer"
                             onClick={() => toggleCurrency(currency.value)}
                           >
-                            <Checkbox 
+                            <Checkbox
                               checked={enabledCurrencies.includes(currency.value)}
                               onCheckedChange={() => toggleCurrency(currency.value)}
                             />
@@ -667,7 +674,7 @@ const Settings = () => {
                   </CardFooter>
                 </Card>
               </TabsContent>
-              
+
               <TabsContent value="email">
                 <Card>
                   <CardHeader>
@@ -693,7 +700,7 @@ const Settings = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="emailTemplate">Email Template</Label>
                       <div className="text-xs text-muted-foreground mb-2">
@@ -720,7 +727,7 @@ const Settings = () => {
           </div>
         </main>
       </div>
-      
+
       <Dialog open={isCurrencyDialogOpen} onOpenChange={setIsCurrencyDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -733,12 +740,12 @@ const Settings = () => {
             <ScrollArea className="h-[60vh] pr-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {CURRENCIES.map((currency) => (
-                  <div 
-                    key={currency.value} 
+                  <div
+                    key={currency.value}
                     className="flex items-center space-x-2 p-2 border rounded hover:bg-muted/40 cursor-pointer"
                     onClick={() => toggleCurrency(currency.value)}
                   >
-                    <Checkbox 
+                    <Checkbox
                       checked={enabledCurrencies.includes(currency.value)}
                       onCheckedChange={() => toggleCurrency(currency.value)}
                     />
