@@ -24,7 +24,11 @@ export const InvoiceNotesField = ({
         <FormItem>
           <FormLabel>Notes</FormLabel>
           <FormControl>
-            <Textarea {...field} />
+            <Textarea 
+              {...field} 
+              value={field.value || ""} 
+              placeholder="Add any notes or special instructions for this invoice"
+            />
           </FormControl>
           <FormMessage />
         </FormItem>

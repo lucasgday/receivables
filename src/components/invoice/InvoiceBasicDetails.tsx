@@ -18,6 +18,11 @@ import {
 import { Tables } from "@/integrations/supabase/types";
 
 type Customer = Tables<"customers">;
+type Company = {
+  id: string;
+  name: string;
+  payment_template: string;
+};
 
 interface InvoiceBasicDetailsProps {
   form: UseFormReturn<any>;
@@ -25,6 +30,7 @@ interface InvoiceBasicDetailsProps {
   customers: Customer[];
   isLoadingCustomers: boolean;
   showCompany: boolean;
+  companies?: Company[];
 }
 
 export const InvoiceBasicDetails = ({
@@ -33,6 +39,7 @@ export const InvoiceBasicDetails = ({
   customers,
   isLoadingCustomers,
   showCompany,
+  companies = [],
 }: InvoiceBasicDetailsProps) => {
   return (
     <>
@@ -88,9 +95,23 @@ export const InvoiceBasicDetails = ({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Invoicing Company</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Your Company Name" />
-              </FormControl>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a company" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.name}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

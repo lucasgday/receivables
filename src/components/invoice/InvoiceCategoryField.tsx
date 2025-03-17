@@ -36,7 +36,7 @@ export const InvoiceCategoryField = ({
           <Select
             disabled={isLoadingCategories}
             onValueChange={field.onChange}
-            defaultValue={field.value}
+            defaultValue={field.value || "no-category"}
           >
             <FormControl>
               <SelectTrigger>

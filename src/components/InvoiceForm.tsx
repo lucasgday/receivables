@@ -1,5 +1,4 @@
 
-import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Tables } from "@/integrations/supabase/types";
 import { useInvoiceActions } from "@/hooks/useInvoiceActions";
@@ -42,6 +41,11 @@ export const InvoiceForm = ({
       data.paid_date = null;
     }
     
+    // Handle no-category selection
+    if (data.category_id === "no-category" || data.category_id === "") {
+      data.category_id = null;
+    }
+    
     let result;
     if (invoice) {
       result = await updateInvoice(invoice.id, data);
@@ -63,6 +67,7 @@ export const InvoiceForm = ({
           customers={customers}
           isLoadingCustomers={isLoadingCustomers}
           showCompany={settings?.show_company || false}
+          companies={settings?.companies || []}
         />
         
         <InvoiceCategoryField 
@@ -74,6 +79,7 @@ export const InvoiceForm = ({
         <InvoiceAmountFields 
           form={form}
           showCurrency={settings?.show_currency || false}
+          enabledCurrencies={settings?.enabled_currencies}
         />
         
         <InvoiceDateFields 

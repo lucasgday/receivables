@@ -8,15 +8,24 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface InvoiceAmountFieldsProps {
   form: UseFormReturn<any>;
   showCurrency: boolean;
+  enabledCurrencies?: string[];
 }
 
 export const InvoiceAmountFields = ({
   form,
   showCurrency,
+  enabledCurrencies = ["USD", "EUR", "GBP"],
 }: InvoiceAmountFieldsProps) => {
   return (
     <div className="flex gap-4">
@@ -47,9 +56,23 @@ export const InvoiceAmountFields = ({
           render={({ field }) => (
             <FormItem className="w-24">
               <FormLabel>Currency</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="USD" />
-              </FormControl>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="USD" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {enabledCurrencies.map((currency) => (
+                    <SelectItem key={currency} value={currency}>
+                      {currency}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
