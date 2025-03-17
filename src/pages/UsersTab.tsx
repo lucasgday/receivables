@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button"; // This should point to a specific file, not a directory
-import { Input, Select } from "@/components/ui"; // Import necessary UI components
+import { Button } from "@/components/ui/button"; // Ensure this points to the button file
+import { Input } from "@/components/ui/input"; // Correctly point to the Input component
+import { Select, SelectItem } from "@/components/ui/select"; // Correctly point to the Select component
 import { toast } from "sonner"; // For notifications
 import { supabase } from "@/integrations/supabase/client"; // Ensure you have the correct import
 
