@@ -69,12 +69,13 @@ export const useSettings = () => {
       }
 
       if (settingsData) {
-        // Set default enabled currencies since this field isn't in the database yet
-        const defaultEnabledCurrencies = ["USD", "EUR", "GBP"];
+        // Use enabled_currencies from the database if available, otherwise use defaults
+        const defaultEnabledCurrencies = ["USD"];
+        const enabledCurrencies = settingsData.enabled_currencies || defaultEnabledCurrencies;
 
         setSettings({
           ...settingsData,
-          enabled_currencies: defaultEnabledCurrencies,
+          enabled_currencies: enabledCurrencies,
           companies: companiesData || []
         });
       } else {
@@ -85,7 +86,7 @@ export const useSettings = () => {
           show_company: true,
           default_currency: "USD",
           default_company: null,
-          enabled_currencies: ["USD", "EUR", "GBP"],
+          enabled_currencies: ["USD"],
           companies: companiesData || [],
         };
 
@@ -99,7 +100,7 @@ export const useSettings = () => {
 
         setSettings({
           ...newSettings,
-          enabled_currencies: ["USD", "EUR", "GBP"], // Add enabled_currencies since it's not in the DB
+          enabled_currencies: ["USD"],
           companies: companiesData || []
         });
       }
@@ -230,8 +231,10 @@ export const useSettings = () => {
 
       // Update local state
       setSettings((prev) => (prev ? { ...prev, enabled_currencies: newCurrencies } : prev));
+      toast.success("Currency settings updated successfully");
     } catch (error) {
       console.error("Error updating enabled currencies:", error);
+      toast.error("Failed to update currency settings");
     }
   };
 

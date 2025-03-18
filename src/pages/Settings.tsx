@@ -44,38 +44,13 @@ import { UsersTab } from "./UsersTab";
 const CURRENCIES = [
   { value: "USD", label: "USD - US Dollar" },
   { value: "EUR", label: "EUR - Euro" },
-  { value: "GBP", label: "GBP - British Pound" },
-  { value: "CAD", label: "CAD - Canadian Dollar" },
-  { value: "AUD", label: "AUD - Australian Dollar" },
-  { value: "JPY", label: "JPY - Japanese Yen" },
   { value: "ARS", label: "ARS - Argentine Peso" },
-  { value: "BOB", label: "BOB - Bolivian Boliviano" },
   { value: "BRL", label: "BRL - Brazilian Real" },
   { value: "CLP", label: "CLP - Chilean Peso" },
   { value: "COP", label: "COP - Colombian Peso" },
-  { value: "CRC", label: "CRC - Costa Rican Colón" },
-  { value: "DOP", label: "DOP - Dominican Peso" },
-  { value: "GTQ", label: "GTQ - Guatemalan Quetzal" },
-  { value: "HNL", label: "HNL - Honduran Lempira" },
   { value: "MXN", label: "MXN - Mexican Peso" },
-  { value: "NIO", label: "NIO - Nicaraguan Córdoba" },
-  { value: "PAB", label: "PAB - Panamanian Balboa" },
   { value: "PEN", label: "PEN - Peruvian Sol" },
-  { value: "PYG", label: "PYG - Paraguayan Guaraní" },
   { value: "UYU", label: "UYU - Uruguayan Peso" },
-  { value: "VES", label: "VES - Venezuelan Bolívar" },
-  { value: "CHF", label: "CHF - Swiss Franc" },
-  { value: "CNY", label: "CNY - Chinese Yuan" },
-  { value: "INR", label: "INR - Indian Rupee" },
-  { value: "NZD", label: "NZD - New Zealand Dollar" },
-  { value: "SGD", label: "SGD - Singapore Dollar" },
-  { value: "HKD", label: "HKD - Hong Kong Dollar" },
-  { value: "SEK", label: "SEK - Swedish Krona" },
-  { value: "NOK", label: "NOK - Norwegian Krone" },
-  { value: "DKK", label: "DKK - Danish Krone" },
-  { value: "PLN", label: "PLN - Polish Zloty" },
-  { value: "ZAR", label: "ZAR - South African Rand" },
-  { value: "RUB", label: "RUB - Russian Ruble" },
 ];
 
 const Settings = () => {
@@ -100,7 +75,7 @@ const Settings = () => {
   const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const [enabledCurrencies, setEnabledCurrencies] = useState<string[]>(["USD", "EUR", "GBP"]);
+  const [enabledCurrencies, setEnabledCurrencies] = useState<string[]>(["USD"]);
   const [isCurrencyDialogOpen, setIsCurrencyDialogOpen] = useState(false);
 
   const [emailTemplates, setEmailTemplates] = useState<{[key: string]: string}>({
