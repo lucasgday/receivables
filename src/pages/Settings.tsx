@@ -80,7 +80,7 @@ const CURRENCIES = [
 
 const Settings = () => {
   const { user } = useAuth();
-  const { settings, isLoading, updateSettings, addCompany, updateCompany, deleteCompany } = useSettings();
+  const { settings, isLoading, updateSettings, addCompany, updateCompany, deleteCompany, updateEnabledCurrencies } = useSettings();
   const { theme, setTheme } = useTheme();
   const [companyName, setCompanyName] = useState("My Company");
   const [email, setEmail] = useState(user?.email || "");
@@ -133,9 +133,13 @@ const Settings = () => {
       default_currency: defaultCurrency,
       default_company: defaultCompany,
       show_currency: showCurrency,
-      show_company: showCompany,
-      enabled_currencies: enabledCurrencies
+      show_company: showCompany
     });
+  };
+
+  const saveCurrencySettings = async () => {
+    await updateEnabledCurrencies(enabledCurrencies);
+    toast.success("Currency settings saved successfully");
   };
 
   const saveEmailTemplate = () => {
@@ -670,7 +674,7 @@ const Settings = () => {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button onClick={saveInvoiceSettings}>Save Currency Settings</Button>
+                    <Button onClick={saveCurrencySettings}>Save Currency Settings</Button>
                   </CardFooter>
                 </Card>
               </TabsContent>
@@ -758,7 +762,7 @@ const Settings = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCurrencyDialogOpen(false)}>Cancel</Button>
             <Button onClick={() => {
-              saveInvoiceSettings();
+              saveCurrencySettings();
               setIsCurrencyDialogOpen(false);
             }}>
               Save Changes

@@ -115,9 +115,9 @@ export const useSettings = () => {
     if (!settings?.id) return null;
 
     try {
-      // Create a copy of updatedSettings without enabled_currencies
-      // since this field doesn't exist in the database yet
-      const { enabled_currencies, companies, ...dbUpdateSettings } = updatedSettings;
+      // Create a copy of updatedSettings without companies
+      // since this field is managed separately
+      const { companies, ...dbUpdateSettings } = updatedSettings;
 
       const { data, error } = await supabase
         .from("user_settings")

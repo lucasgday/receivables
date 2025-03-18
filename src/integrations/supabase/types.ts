@@ -286,6 +286,7 @@ export type Database = {
           created_at: string | null
           default_company: string | null
           default_currency: string
+          enabled_currencies: string[]
           id: string
           show_company: boolean
           show_currency: boolean
@@ -296,6 +297,7 @@ export type Database = {
           created_at?: string | null
           default_company?: string | null
           default_currency?: string
+          enabled_currencies?: string[]
           id?: string
           show_company?: boolean
           show_currency?: boolean
@@ -306,6 +308,7 @@ export type Database = {
           created_at?: string | null
           default_company?: string | null
           default_currency?: string
+          enabled_currencies?: string[]
           id?: string
           show_company?: boolean
           show_currency?: boolean
