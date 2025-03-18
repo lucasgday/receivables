@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,13 +25,24 @@ export const useInvoiceActions = () => {
         invoiceData.category_id = null;
       }
 
+      // Remove any nested relations before sending to the database
+      const { categories, customers, ...cleanInvoiceData } = invoiceData;
+
       const { data, error } = await supabase
         .from("invoices")
         .insert({
-          ...invoiceData,
+          ...cleanInvoiceData,
           user_id: user?.id || "00000000-0000-0000-0000-000000000000",
         })
-        .select('*')
+        .select(`
+          *,
+          customers (
+            name
+          ),
+          categories (
+            name
+          )
+        `)
         .single();
 
       if (error) throw error;
@@ -66,11 +76,22 @@ export const useInvoiceActions = () => {
         invoiceData.category_id = null;
       }
 
+      // Remove any nested relations before sending to the database
+      const { categories, customers, ...cleanInvoiceData } = invoiceData;
+
       const { data, error } = await supabase
         .from("invoices")
-        .update(invoiceData)
+        .update(cleanInvoiceData)
         .eq("id", invoiceId)
-        .select('*')
+        .select(`
+          *,
+          customers (
+            name
+          ),
+          categories (
+            name
+          )
+        `)
         .single();
 
       if (error) throw error;
