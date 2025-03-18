@@ -103,6 +103,7 @@ export const InvoiceForm = ({
         <InvoiceFormActions
           invoice={invoice}
           isLoading={isLoading}
+          customer={customers.find(c => c.id === form.getValues("customer_id"))}
         />
       </form>
     </Form>

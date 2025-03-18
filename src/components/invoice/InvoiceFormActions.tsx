@@ -1,30 +1,47 @@
 import { Button } from "@/components/ui/button";
 import { Tables } from "@/integrations/supabase/types";
+import { useFacturante } from "@/hooks/useFacturante";
+import { Loader2 } from "lucide-react";
 
-type Invoice = Tables<"invoices">;
+interface InvoiceFormActionsProps {
+  invoice?: Tables<"invoices">;
+  isLoading: boolean;
+  customer?: Tables<"customers">;
+}
 
 export const InvoiceFormActions = ({
   invoice,
   isLoading,
-}: {
-  invoice?: Invoice;
-  isLoading: boolean;
-}) => {
+  customer,
+}: InvoiceFormActionsProps) => {
+  const { isGenerating, generateFiscalInvoice } = useFacturante();
+
+  const handleGenerateFiscalInvoice = async () => {
+    if (!invoice || !customer) return;
+    await generateFiscalInvoice(invoice, customer);
+  };
+
   return (
-    <div className="flex gap-4">
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading
-          ? (invoice ? "Updating Invoice..." : "Creating Invoice...")
-          : (invoice ? "Update Invoice" : "Create Invoice")}
+    <div className="flex justify-end gap-2">
+      <Button
+        type="submit"
+        disabled={isLoading}
+        className="w-32"
+      >
+        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {invoice ? "Update" : "Create"}
       </Button>
 
-      {invoice && (
+      {invoice && customer && (
         <Button
           type="button"
           variant="outline"
-          onClick={() => window.open(`/invoice-pdf/${invoice.id}`, '_blank')}
+          onClick={handleGenerateFiscalInvoice}
+          disabled={isGenerating}
+          className="w-48"
         >
-          Generate PDF
+          {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Generate Fiscal Invoice
         </Button>
       )}
     </div>
