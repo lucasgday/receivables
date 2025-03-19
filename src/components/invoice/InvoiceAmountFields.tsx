@@ -24,7 +24,7 @@ interface InvoiceAmountFieldsProps {
   onCurrencyChange: (currency: string) => void;
 }
 
-const DEFAULT_CURRENCIES = ["USD", "EUR", "GBP"];
+const DEFAULT_CURRENCIES = ["USD"];
 
 export const InvoiceAmountFields = ({
   form,
