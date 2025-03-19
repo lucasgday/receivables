@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -56,7 +55,7 @@ export const AddCustomerSheet = ({
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
@@ -100,9 +99,9 @@ export const AddCustomerSheet = ({
       toast.error("Please provide either a company name or a contact name");
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Check for authentication
       if (!user && !import.meta.env.DEV) {
@@ -114,7 +113,7 @@ export const AddCustomerSheet = ({
 
       // Get the user ID, using a default for development if needed
       const userId = user?.id || (import.meta.env.DEV ? "00000000-0000-0000-0000-000000000000" : null);
-      
+
       if (!userId) {
         toast.error("You must be logged in to add customers");
         setIsSubmitting(false);
@@ -138,7 +137,7 @@ export const AddCustomerSheet = ({
 
       if (error) {
         console.error("Error adding customer:", error);
-        
+
         if (error.code === "42501") {
           toast.error("Permission denied. Please check if you're properly logged in.");
           // If in production and there's a permission error, attempt to redirect to auth
@@ -155,7 +154,7 @@ export const AddCustomerSheet = ({
       toast.success("Customer added successfully");
       onOpenChange(false);
       form.reset();
-      
+
       if (onCustomerAdded) {
         onCustomerAdded();
       }
@@ -206,7 +205,7 @@ export const AddCustomerSheet = ({
                 )}
               />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -235,7 +234,7 @@ export const AddCustomerSheet = ({
                 )}
               />
             </div>
-            
+
             <FormField
               control={form.control}
               name="address"
@@ -249,7 +248,7 @@ export const AddCustomerSheet = ({
                 </FormItem>
               )}
             />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
@@ -291,7 +290,7 @@ export const AddCustomerSheet = ({
                 )}
               />
             </div>
-            
+
             <FormField
               control={form.control}
               name="category_id"
@@ -309,7 +308,7 @@ export const AddCustomerSheet = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">No default category</SelectItem>
+                      <SelectItem value="none">No default category</SelectItem>
                       {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
@@ -321,7 +320,7 @@ export const AddCustomerSheet = ({
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="notes"
@@ -335,12 +334,13 @@ export const AddCustomerSheet = ({
                 </FormItem>
               )}
             />
-            
-            <div className="flex justify-end gap-2 mt-6">
+
+            <div className="flex justify-end space-x-2 mt-6">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
