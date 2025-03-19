@@ -23,11 +23,19 @@ export const LogNotes = ({ customerId, invoiceId }: LogNotesProps) => {
 
   const fetchLogs = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("logs")
-        .select("*")
-        .or(`customer_id.eq.${customerId},invoice_id.eq.${invoiceId}`)
-        .order("created_at", { ascending: false });
+        .select("*");
+
+      if (customerId && invoiceId) {
+        query = query.in('customer_id', [customerId]).or(`invoice_id.eq.${invoiceId}`);
+      } else if (customerId) {
+        query = query.eq('customer_id', customerId);
+      } else if (invoiceId) {
+        query = query.eq('invoice_id', invoiceId);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
 

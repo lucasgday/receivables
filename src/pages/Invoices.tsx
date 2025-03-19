@@ -89,10 +89,10 @@ const Invoices = () => {
                   {isSendingEmails && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Send Monthly Invoices
                 </Button>
-                <Button onClick={() => setNewInvoiceOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Invoice
-                </Button>
+              <Button onClick={() => setNewInvoiceOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Invoice
+              </Button>
               </div>
             </div>
 
