@@ -13,7 +13,7 @@ import { InvoiceFormActions } from "./invoice/InvoiceFormActions";
 import { InvoiceContractSection } from "./invoice/InvoiceContractSection";
 import { useState } from "react";
 import { toast } from "@/components/ui/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/ui/use-toast";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
