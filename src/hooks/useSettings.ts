@@ -21,6 +21,7 @@ export interface UserSettings {
   default_company: string | null;
   enabled_currencies?: string[];
   companies?: InvoicingCompany[];
+  last_invoice_number?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -58,6 +59,26 @@ export const useSettings = () => {
         throw settingsError;
       }
 
+      // If no settings exist, create default settings
+      if (!settingsData) {
+        const { data: newSettings, error: createError } = await supabase
+          .from("user_settings")
+          .insert({
+            user_id: user?.id || "00000000-0000-0000-0000-000000000000",
+            show_currency: true,
+            show_company: true,
+            default_currency: "USD",
+            last_invoice_number: 0,
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        setSettings(newSettings);
+      } else {
+        setSettings(settingsData);
+      }
+
       // Get companies for the user
       const { data: companiesData, error: companiesError } = await supabase
         .from("companies")
@@ -68,42 +89,7 @@ export const useSettings = () => {
         throw companiesError;
       }
 
-      if (settingsData) {
-        // Use enabled_currencies from the database if available, otherwise use defaults
-        const defaultEnabledCurrencies = ["USD"];
-        const enabledCurrencies = settingsData.enabled_currencies || defaultEnabledCurrencies;
-
-        setSettings({
-          ...settingsData,
-          enabled_currencies: enabledCurrencies,
-          companies: companiesData || []
-        });
-      } else {
-        // Create default settings for new user
-        const defaultSettings: UserSettings = {
-          user_id: user?.id || "00000000-0000-0000-0000-000000000000",
-          show_currency: true,
-          show_company: true,
-          default_currency: "USD",
-          default_company: null,
-          enabled_currencies: ["USD"],
-          companies: companiesData || [],
-        };
-
-        const { data: newSettings, error: insertError } = await supabase
-          .from("user_settings")
-          .insert(defaultSettings)
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-
-        setSettings({
-          ...newSettings,
-          enabled_currencies: ["USD"],
-          companies: companiesData || []
-        });
-      }
+      setSettings((prev) => (prev ? { ...prev, companies: companiesData } : prev));
     } catch (error) {
       console.error("Error fetching settings:", error);
       toast.error("Failed to load settings");
@@ -238,6 +224,28 @@ export const useSettings = () => {
     }
   };
 
+  const incrementInvoiceNumber = async () => {
+    if (!user || !settings) return;
+
+    try {
+      const newNumber = (settings.last_invoice_number || 0) + 1;
+      const { error } = await supabase
+        .from("user_settings")
+        .update({ last_invoice_number: newNumber })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setSettings((prev) => (prev ? { ...prev, last_invoice_number: newNumber } : prev));
+      return newNumber;
+    } catch (error) {
+      console.error("Error incrementing invoice number:", error);
+      toast.error("Failed to update invoice number");
+      return null;
+    }
+  };
+
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
@@ -250,6 +258,7 @@ export const useSettings = () => {
     addCompany,
     updateCompany,
     deleteCompany,
-    updateEnabledCurrencies
+    updateEnabledCurrencies,
+    incrementInvoiceNumber,
   };
 };

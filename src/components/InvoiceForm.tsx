@@ -13,6 +13,10 @@ import { InvoiceFormActions } from "./invoice/InvoiceFormActions";
 import { InvoiceContractSection } from "./invoice/InvoiceContractSection";
 import { useState } from "react";
 import { toast } from "@/components/ui/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/use-toast";
+import { z } from "zod";
+import { supabase } from "@/lib/supabase";
 
 type Invoice = Tables<"invoices">;
 
@@ -21,12 +25,14 @@ export const InvoiceForm = ({
   customerId,
   invoice,
 }: {
-  onSuccess?: () => void;
+  onSuccess?: (invoice: Invoice) => void;
   customerId?: string;
   invoice?: Invoice;
 }) => {
   const { createInvoice, updateInvoice, isLoading } = useInvoiceActions();
-  const { settings } = useSettings();
+  const { settings, incrementInvoiceNumber } = useSettings();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const {
     form,
     customers,
@@ -38,31 +44,55 @@ export const InvoiceForm = ({
   } = useInvoiceForm(invoice, customerId, onSuccess);
 
   const [selectedCurrency, setSelectedCurrency] = useState(settings?.default_currency || "USD");
+  const [isLoading, setIsLoading] = useState(false);
+  const [invoiceNumber, setInvoiceNumber] = useState<string>("");
 
   const handleCurrencyChange = (currency: string) => {
     setSelectedCurrency(currency); // Update the selected currency for the invoice
   };
 
-  const onSubmit = async (data: any) => {
-    // Handle empty paid_date when status is not Paid
-    if (data.status !== "Paid") {
-      data.paid_date = null;
-    }
+  const onSubmit = async (data: z.infer<typeof invoiceSchema>) => {
+    if (!user) return;
+    setIsLoading(true);
 
-    // Handle no-category selection
-    if (data.category_id === "no-category" || data.category_id === "") {
-      data.category_id = null;
-    }
+    try {
+      // Get the next invoice number
+      const nextNumber = await incrementInvoiceNumber();
+      if (!nextNumber) {
+        throw new Error("Failed to generate invoice number");
+      }
 
-    let result;
-    if (invoice) {
-      result = await updateInvoice(invoice.id, { ...data, currency: selectedCurrency });
-    } else {
-      result = await createInvoice({ ...data, currency: selectedCurrency });
-    }
+      // Format the invoice number (e.g., "INV-0001")
+      const formattedNumber = `INV-${String(nextNumber).padStart(4, "0")}`;
 
-    if (result && onSuccess) {
-      onSuccess();
+      const { data: invoice, error } = await supabase
+        .from("invoices")
+        .insert({
+          ...data,
+          user_id: user.id,
+          invoice_number: formattedNumber,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Invoice created successfully",
+      });
+
+      if (onSuccess) {
+        onSuccess(invoice);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create invoice",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
