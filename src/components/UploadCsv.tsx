@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, Info } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { 
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -37,15 +37,86 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
   const [progress, setProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
 
+  const parseDate = (dateStr: string): string | null => {
+    try {
+      // Remove any extra whitespace
+      dateStr = dateStr.trim();
+
+      // Handle DD/MM/YYYY format
+      if (dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          // Handle 2-digit years
+          const fullYear = year.length === 2 ? (parseInt(year) > 50 ? '19' + year : '20' + year) : year;
+          return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+      }
+
+      // Handle DD-MM-YYYY format
+      if (dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+      }
+
+      // Handle DD.MM.YYYY format
+      if (dateStr.includes('.')) {
+        const parts = dateStr.split('.');
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+      }
+
+      // Try parsing as ISO date
+      const parsedDate = new Date(dateStr);
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate.toISOString().split('T')[0];
+      }
+
+      return null;
+    } catch (e) {
+      console.warn("Could not parse date:", dateStr);
+      return null;
+    }
+  };
+
+  const parseAmount = (amountStr: string): number | null => {
+    try {
+      // Remove any extra whitespace
+      amountStr = amountStr.trim();
+
+      // Handle different thousand separators and decimal points
+      let normalizedAmount = amountStr
+        // Remove currency symbols and other non-numeric characters
+        .replace(/[^\d.,\s]/g, '')
+        // Remove spaces
+        .replace(/\s/g, '')
+        // Handle different thousand separators
+        .replace(/(\d)\.(\d{3})/g, '$1$2')
+        // Replace comma with dot for decimal point
+        .replace(',', '.');
+
+      const amount = parseFloat(normalizedAmount);
+      return isNaN(amount) ? null : amount;
+    } catch (e) {
+      console.warn("Could not parse amount:", amountStr);
+      return null;
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     if (!companyId) {
       toast.error("Please select a company first");
       return;
     }
-    
+
     if (!user) {
       toast.error("You must be logged in to upload files");
       return;
@@ -65,67 +136,58 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
       // Parse CSV file
       const text = await file.text();
       const rows = text.split('\n').filter(row => row.trim());
-      
+
       if (rows.length <= 1) {
         throw new Error("CSV file is empty or contains only headers");
       }
-      
-      const headers = rows[0].split(',').map(header => header.trim().toLowerCase());
-      
+
+      // Try to detect the separator (comma or semicolon)
+      const firstRow = rows[0];
+      const separator = firstRow.includes(';') ? ';' : ',';
+      const headers = firstRow.split(separator).map(header => header.trim().toLowerCase());
+
       // Check if required columns exist
       const requiredColumns = ['date', 'description', 'amount'];
       const missingColumns = requiredColumns.filter(col => !headers.some(h => h.includes(col)));
-      
+
       if (missingColumns.length > 0) {
         throw new Error(`CSV is missing required columns: ${missingColumns.join(', ')}`);
       }
 
       setProgress(30);
-      
+
       // Process data
       const movements = [];
       const dateIndex = headers.findIndex(h => h.includes('date'));
       const descriptionIndex = headers.findIndex(h => h.includes('description'));
       const amountIndex = headers.findIndex(h => h.includes('amount'));
-      
-      // Get existing references to avoid duplicates (not needed anymore but keep as reference)
-      const { data: existingMovements } = await supabase
-        .from('bank_movements')
-        .select('reference')
-        .eq('company_id', companyId);
-      
-      const existingReferences = new Set((existingMovements || []).map(m => m.reference));
-      
+
       setProgress(50);
-      
+
       // Process each row (skip header)
       for (let i = 1; i < rows.length; i++) {
-        const values = rows[i].split(',').map(val => val.trim());
+        const values = rows[i].split(separator).map(val => val.trim());
         if (values.length !== headers.length) continue;
-        
-        // Generate a unique reference ID instead of requiring it from the user
+
+        // Generate a unique reference ID
         const timestamp = Date.now();
         const randomStr = Math.random().toString(36).substring(2, 8);
         const reference = `TRANS-${timestamp}-${randomStr}`;
-        
+
         // Parse date
-        let date = values[dateIndex];
-        try {
-          // Try to standardize date format
-          const parsedDate = new Date(date);
-          if (!isNaN(parsedDate.getTime())) {
-            date = parsedDate.toISOString().split('T')[0];
-          }
-        } catch (e) {
-          console.warn("Could not parse date:", date);
+        const date = parseDate(values[dateIndex]);
+        if (!date) {
+          console.warn(`Skipping row ${i + 1}: Invalid date format`);
+          continue;
         }
-        
+
         // Parse amount
-        let amountStr = values[amountIndex].replace(/[^\d.-]/g, '');
-        let amount = parseFloat(amountStr);
-        
-        if (isNaN(amount)) continue;
-        
+        const amount = parseAmount(values[amountIndex]);
+        if (amount === null) {
+          console.warn(`Skipping row ${i + 1}: Invalid amount format`);
+          continue;
+        }
+
         movements.push({
           user_id: user.id,
           company_id: companyId,
@@ -136,9 +198,9 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
           reference,
         });
       }
-      
+
       setProgress(70);
-      
+
       if (movements.length === 0) {
         toast.error("No valid movements found to import. Please check your CSV format.");
         setIsUploading(false);
@@ -147,7 +209,7 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
         event.target.value = '';
         return;
       }
-      
+
       // Insert data in batches to avoid hitting limits
       const batchSize = 100;
       for (let i = 0; i < movements.length; i += batchSize) {
@@ -155,13 +217,13 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
         const { error } = await supabase
           .from('bank_movements')
           .insert(batch);
-        
+
         if (error) throw error;
-        
+
         // Calculate progress percentage correctly
         setProgress(70 + Math.floor((i / movements.length) * 30));
       }
-      
+
       setProgress(100);
       toast.success(`Successfully imported ${movements.length} bank movements`);
     } catch (error) {
@@ -213,7 +275,7 @@ export function UploadCsv({ companyId, currency, onImportStart, onImportComplete
             disabled={!companyId || isUploading}
             style={{ top: 0, left: 0 }}
           />
-          <Button 
+          <Button
             variant="outline"
             className="mt-4 pointer-events-none"
             disabled={!companyId || isUploading}
