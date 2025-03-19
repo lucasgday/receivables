@@ -86,7 +86,7 @@ export const emailService = {
     return Promise.all(emailPromises);
   },
 
-  private async sendCustomerEmail(
+  async sendCustomerEmail(
     customer: Tables<"customers">,
     invoices: EmailInvoice[]
   ) {
