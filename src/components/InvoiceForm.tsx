@@ -56,39 +56,63 @@ export const InvoiceForm = ({
     setIsLoading(true);
 
     try {
-      // Get the next invoice number
-      const nextNumber = await incrementInvoiceNumber();
-      if (!nextNumber) {
-        throw new Error("Failed to generate invoice number");
-      }
+      if (invoice) {
+        // Update existing invoice
+        const { data: updatedInvoice, error } = await supabase
+          .from("invoices")
+          .update({
+            ...data,
+            user_id: user.id,
+          })
+          .eq("id", invoice.id)
+          .select()
+          .single();
 
-      // Format the invoice number (e.g., "INV-0001")
-      const formattedNumber = `INV-${String(nextNumber).padStart(4, "0")}`;
+        if (error) throw error;
 
-      const { data: invoice, error } = await supabase
-        .from("invoices")
-        .insert({
-          ...data,
-          user_id: user.id,
-          invoice_number: formattedNumber,
-        })
-        .select()
-        .single();
+        toast({
+          title: "Success",
+          description: "Invoice updated successfully",
+        });
 
-      if (error) throw error;
+        if (onSuccess) {
+          onSuccess(updatedInvoice);
+        }
+      } else {
+        // Create new invoice
+        const nextNumber = await incrementInvoiceNumber();
+        if (!nextNumber) {
+          throw new Error("Failed to generate invoice number");
+        }
 
-      toast({
-        title: "Success",
-        description: "Invoice created successfully",
-      });
+        // Format the invoice number (e.g., "INV-0001")
+        const formattedNumber = `INV-${String(nextNumber).padStart(4, "0")}`;
 
-      if (onSuccess) {
-        onSuccess(invoice);
+        const { data: newInvoice, error } = await supabase
+          .from("invoices")
+          .insert({
+            ...data,
+            user_id: user.id,
+            invoice_number: formattedNumber,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Invoice created successfully",
+        });
+
+        if (onSuccess) {
+          onSuccess(newInvoice);
+        }
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to create invoice",
+        description: error.message || (invoice ? "Failed to update invoice" : "Failed to create invoice"),
         variant: "destructive",
       });
     } finally {
