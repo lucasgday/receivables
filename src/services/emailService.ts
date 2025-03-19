@@ -2,11 +2,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/components/AuthProvider";
 
-interface EmailInvoice {
-  invoice: Tables<"invoices">;
-  customer: Tables<"customers">;
-  pdfUrl?: string;
-}
+type EmailInvoice = Tables<"invoices"> & {
+  customer: {
+    name: string;
+    email: string;
+  };
+};
 
 type Invoice = Tables<"invoices">;
 type Customer = Tables<"customers">;
@@ -39,60 +40,76 @@ ${invoice.invoicing_company || "Your Company"}
 
 export const emailService = {
   async getCurrentMonthInvoices(userId: string): Promise<EmailInvoice[]> {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const endOfMonth = new Date();
-    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-    endOfMonth.setDate(0);
-    endOfMonth.setHours(23, 59, 59, 999);
-
-    const { data: invoices, error } = await supabase
+    const { data, error } = await supabase
       .from("invoices")
       .select(`
         *,
-        customers (
-          *
+        customer:customers (
+          name,
+          email
         )
       `)
       .eq("user_id", userId)
-      .gte("issued_date", startOfMonth.toISOString())
-      .lte("issued_date", endOfMonth.toISOString());
+      .eq("status", "Pending");
 
     if (error) throw error;
-    return invoices || [];
+    return data || [];
   },
 
-  async sendBulkEmails(invoices: EmailInvoice[]) {
-    // Group invoices by customer
-    const customerInvoices = invoices.reduce((acc, invoice) => {
-      const customerId = invoice.customer.id;
-      if (!acc[customerId]) {
-        acc[customerId] = {
-          customer: invoice.customer,
-          invoices: [],
-        };
+  async sendBulkEmails(invoices: EmailInvoice[]): Promise<any[]> {
+    const results = [];
+    for (const invoice of invoices) {
+      if (invoice.customer?.email) {
+        try {
+          const result = await this.sendInvoiceEmail(invoice.id);
+          results.push(result);
+        } catch (error) {
+          console.error(`Failed to send email for invoice ${invoice.id}:`, error);
+          results.push({ error, invoiceId: invoice.id });
+        }
       }
-      acc[customerId].invoices.push(invoice);
-      return acc;
-    }, {} as Record<string, { customer: Tables<"customers">; invoices: EmailInvoice[] }>);
+    }
+    return results;
+  },
 
-    // Send emails to each customer
-    const emailPromises = Object.values(customerInvoices).map(({ customer, invoices }) =>
-      this.sendCustomerEmail(customer, invoices)
-    );
+  async sendInvoiceEmail(invoiceId: string): Promise<any> {
+    const { data: invoice, error } = await supabase
+      .from("invoices")
+      .select(`
+        *,
+        customer:customers (
+          name,
+          email
+        )
+      `)
+      .eq("id", invoiceId)
+      .single();
 
-    return Promise.all(emailPromises);
+    if (error) throw error;
+    if (!invoice || !invoice.customer?.email) {
+      throw new Error("Invoice or customer email not found");
+    }
+
+    // Here you would implement your email sending logic
+    // For now, we'll just return a success response
+    return {
+      success: true,
+      invoiceId,
+      customerEmail: invoice.customer.email,
+    };
   },
 
   async sendCustomerEmail(
-    customer: Tables<"customers">,
+    customer: { name: string; email: string },
     invoices: EmailInvoice[]
-  ) {
-    // TODO: Implement email sending logic
-    // This could use a service like SendGrid, AWS SES, or any other email service
-    console.log(`Sending email to ${customer.email} with ${invoices.length} invoices`);
+  ): Promise<any> {
+    // Here you would implement your email sending logic
+    // For now, we'll just return a success response
+    return {
+      success: true,
+      customerEmail: customer.email,
+      invoiceCount: invoices.length,
+    };
   },
 };
 

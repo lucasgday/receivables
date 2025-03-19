@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Repeat } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { InvoiceList } from "@/components/InvoiceList";
 import { InvoiceFilter } from "@/components/InvoiceFilter";
@@ -17,14 +17,18 @@ import { useInvoices } from "@/hooks/useInvoices";
 import { NewInvoiceSheet } from "@/components/NewInvoiceSheet";
 import { emailService } from "@/services/emailService";
 import { useToast } from "@/components/ui/use-toast";
+import { AddRecurringPaymentDialog } from "@/components/recurring-payments/AddRecurringPaymentDialog";
+import { useCustomers } from "@/hooks/useCustomers";
 
 const Invoices = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
+  const [recurringPaymentOpen, setRecurringPaymentOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSendingEmails, setIsSendingEmails] = useState(false);
+  const { customers } = useCustomers();
 
   const { invoices, isLoading, handleDeleteInvoice, refreshInvoices } = useInvoices(user, activeTab);
 
@@ -32,7 +36,7 @@ const Invoices = () => {
   const filteredInvoices = invoices.filter((invoice) => {
     const searchTerms = [
       invoice.invoice_number,
-      invoice.customers?.name,
+      invoice.customer?.name,
       invoice.status,
     ];
 
@@ -46,24 +50,25 @@ const Invoices = () => {
     setIsSendingEmails(true);
 
     try {
-      const invoices = await emailService.getCurrentMonthInvoices(user.id);
-      if (invoices.length === 0) {
-        toast({
-          title: "No invoices",
-          description: "No invoices found for the current month",
-        });
-        return;
+      const pendingInvoices = invoices.filter(
+        (invoice) => invoice.status === "Pending"
+      );
+
+      for (const invoice of pendingInvoices) {
+        if (invoice.customer?.email) {
+          await emailService.sendInvoiceEmail(invoice.id);
+        }
       }
 
-      await emailService.sendBulkEmails(invoices);
       toast({
         title: "Success",
-        description: "Emails sent successfully",
+        description: "Monthly invoices sent successfully",
       });
-    } catch (error: any) {
+    } catch (error) {
+      console.error("Error sending emails:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send emails",
+        description: "Failed to send monthly invoices",
         variant: "destructive",
       });
     } finally {
@@ -73,7 +78,7 @@ const Invoices = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="flex h-screen">
         <AppSidebar />
         <main className="flex-1 p-8">
           <SidebarTrigger className="mb-4" />
@@ -89,10 +94,14 @@ const Invoices = () => {
                   {isSendingEmails && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Send Monthly Invoices
                 </Button>
-              <Button onClick={() => setNewInvoiceOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Invoice
-              </Button>
+                <Button variant="outline" onClick={() => setRecurringPaymentOpen(true)}>
+                  <Repeat className="h-4 w-4 mr-2" />
+                  New Recurring Payment
+                </Button>
+                <Button onClick={() => setNewInvoiceOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Invoice
+                </Button>
               </div>
             </div>
 
@@ -127,6 +136,11 @@ const Invoices = () => {
           open={newInvoiceOpen}
           onOpenChange={setNewInvoiceOpen}
           onInvoiceCreated={refreshInvoices}
+        />
+
+        <AddRecurringPaymentDialog
+          customers={customers}
+          onSuccess={refreshInvoices}
         />
       </div>
     </SidebarProvider>

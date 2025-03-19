@@ -88,6 +88,22 @@ export const AddRecurringPaymentDialog = ({
 
       if (paymentError) throw paymentError;
 
+      // Create the initial invoice
+      const { error: invoiceError } = await supabase.rpc(
+        'create_recurring_payment_invoices',
+        {
+          p_customer_id: data.customer_id,
+          p_amount: data.amount,
+          p_currency: data.currency,
+          p_frequency: data.frequency,
+          p_start_date: data.start_date,
+          p_end_date: data.end_date,
+          p_is_variable: data.is_variable
+        }
+      );
+
+      if (invoiceError) throw invoiceError;
+
       // If it's a variable payment, create the first payment
       if (data.is_variable) {
         const { error: variableError } = await supabase
@@ -103,7 +119,7 @@ export const AddRecurringPaymentDialog = ({
 
       toast({
         title: "Success",
-        description: "Recurring payment added successfully",
+        description: "Recurring payment and invoice created successfully",
       });
 
       if (onSuccess) {
