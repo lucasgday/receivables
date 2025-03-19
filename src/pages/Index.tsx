@@ -49,7 +49,7 @@ const Index = () => {
       const unpaidInvoices = invoices?.filter(
         (inv) => inv.status !== "Paid" && inv.status !== "paid"
       ) || [];
-      
+
       const totalReceivables = unpaidInvoices.reduce(
         (sum, inv) => sum + Number(inv.amount),
         0
@@ -60,7 +60,7 @@ const Index = () => {
       const paidInvoices = invoices?.filter(
         (inv) => inv.status === "Paid" || inv.status === "paid"
       ) || [];
-      
+
       const collectionRate = invoices?.length > 0
         ? Math.round((paidInvoices.length / invoices.length) * 100)
         : 0;
@@ -113,7 +113,7 @@ const Index = () => {
                 </Button>
               </div>
             </div>
-            
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <StatsCard
                 title="Total Receivables"
@@ -168,7 +168,7 @@ const Index = () => {
             <RecentInvoices />
           </div>
         </main>
-        
+
         <AddCustomerSheet
           open={addCustomerOpen}
           onOpenChange={setAddCustomerOpen}
@@ -177,13 +177,13 @@ const Index = () => {
             fetchDashboardData();
           }}
         />
-        
+
         <NewInvoiceSheet
           open={newInvoiceOpen}
           onOpenChange={setNewInvoiceOpen}
           onInvoiceCreated={handleInvoiceCreated}
         />
-        
+
         {showOnboarding && (
           <Onboarding onComplete={() => setShowOnboarding(false)} />
         )}
