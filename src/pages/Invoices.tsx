@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import {
@@ -9,14 +9,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Repeat } from "lucide-react";
+import { Plus, Loader2, Repeat, Send } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { InvoiceList } from "@/components/InvoiceList";
 import { InvoiceFilter } from "@/components/InvoiceFilter";
-import { useInvoices } from "@/hooks/useInvoices";
-import { NewInvoiceSheet } from "@/components/NewInvoiceSheet";
+import { useInvoices, SortField, SortOrder } from "@/hooks/useInvoices";
+import { NewInvoiceSheet } from "@/components/invoice/NewInvoiceSheet";
 import { emailService } from "@/services/emailService";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { AddRecurringPaymentDialog } from "@/components/recurring-payments/AddRecurringPaymentDialog";
 import { useCustomers } from "@/hooks/useCustomers";
 
@@ -25,54 +25,30 @@ const Invoices = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
   const [recurringPaymentOpen, setRecurringPaymentOpen] = useState(false);
+  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [isSendingEmails, setIsSendingEmails] = useState(false);
-  const { customers } = useCustomers();
+  const { customers, isLoading: customersLoading } = useCustomers();
 
-  const { invoices, isLoading, handleDeleteInvoice, refreshInvoices } = useInvoices(user, activeTab);
+  const { invoices, isLoading, handleDeleteInvoice, refreshInvoices } = useInvoices(
+    user,
+    {
+      searchQuery,
+      status: activeTab,
+    },
+    sortField,
+    sortOrder
+  );
 
-  // Filter invoices based on search query
-  const filteredInvoices = invoices.filter((invoice) => {
-    const searchTerms = [
-      invoice.invoice_number,
-      invoice.customer?.name,
-      invoice.status,
-    ];
-
-    return searchTerms.some(term =>
-      term && term.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
-
-  const handleSendBulkEmails = async () => {
-    if (!user) return;
-    setIsSendingEmails(true);
-
+  const handleSendMonthlyInvoices = async () => {
     try {
-      const pendingInvoices = invoices.filter(
-        (invoice) => invoice.status === "Pending"
-      );
-
-      for (const invoice of pendingInvoices) {
-        if (invoice.customer?.email) {
-          await emailService.sendInvoiceEmail(invoice.id);
-        }
-      }
-
-      toast({
-        title: "Success",
-        description: "Monthly invoices sent successfully",
-      });
+      const currentMonthInvoices = await emailService.getCurrentMonthInvoices();
+      await emailService.sendBulkEmails(currentMonthInvoices);
+      toast.success("Monthly invoices sent successfully");
+      refreshInvoices();
     } catch (error) {
-      console.error("Error sending emails:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send monthly invoices",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSendingEmails(false);
+      console.error("Error sending monthly invoices:", error);
+      toast.error("Failed to send monthly invoices");
     }
   };
 
@@ -88,17 +64,17 @@ const Invoices = () => {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={handleSendBulkEmails}
-                  disabled={isSendingEmails}
+                  onClick={handleSendMonthlyInvoices}
+                  disabled={customersLoading}
                 >
-                  {isSendingEmails && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Send className="h-4 w-4 mr-2" />
                   Send Monthly Invoices
                 </Button>
                 <Button variant="outline" onClick={() => setRecurringPaymentOpen(true)}>
                   <Repeat className="h-4 w-4 mr-2" />
                   New Recurring Payment
                 </Button>
-                <Button onClick={() => setNewInvoiceOpen(true)}>
+                <Button onClick={() => setNewInvoiceOpen(true)} disabled={customersLoading}>
                   <Plus className="h-4 w-4 mr-2" />
                   New Invoice
                 </Button>
@@ -117,12 +93,16 @@ const Invoices = () => {
                     setSearchQuery={setSearchQuery}
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
+                    sortField={sortField}
+                    setSortField={setSortField}
+                    sortOrder={sortOrder}
+                    setSortOrder={setSortOrder}
                   />
                 </div>
               </CardHeader>
               <CardContent>
                 <InvoiceList
-                  invoices={filteredInvoices}
+                  invoices={invoices}
                   isLoading={isLoading}
                   handleDeleteInvoice={handleDeleteInvoice}
                   refreshInvoices={refreshInvoices}
@@ -139,6 +119,8 @@ const Invoices = () => {
         />
 
         <AddRecurringPaymentDialog
+          open={recurringPaymentOpen}
+          onOpenChange={setRecurringPaymentOpen}
           customers={customers}
           onSuccess={refreshInvoices}
         />

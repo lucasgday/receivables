@@ -12,7 +12,29 @@ export type Invoice = Tables<"invoices"> & {
   } | null;
 };
 
-export const useInvoices = (user: any, activeTab: string, customerId?: string) => {
+export type SortField = "created_at" | "due_date" | "amount" | "customer_name" | "currency" | "invoicing_company";
+export type SortOrder = "asc" | "desc";
+
+interface InvoiceFilters {
+  searchQuery: string;
+  status: string;
+  customerId?: string;
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+  amountRange?: {
+    min: number;
+    max: number;
+  };
+}
+
+export const useInvoices = (
+  user: any,
+  filters: InvoiceFilters,
+  sortField: SortField = "created_at",
+  sortOrder: SortOrder = "desc"
+) => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -33,14 +55,32 @@ export const useInvoices = (user: any, activeTab: string, customerId?: string) =
           )
         `);
 
-      // Filter by status if not 'all'
-      if (activeTab !== "all") {
-        query = query.eq("status", activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
+      // Apply filters
+      if (filters.status !== "all" && filters.status !== "overdue") {
+        query = query.eq("status", filters.status.charAt(0).toUpperCase() + filters.status.slice(1));
       }
 
-      // Filter by customer if customerId is provided
-      if (customerId) {
-        query = query.eq("customer_id", customerId);
+      if (filters.customerId) {
+        query = query.eq("customer_id", filters.customerId);
+      }
+
+      if (filters.dateRange) {
+        query = query
+          .gte("created_at", filters.dateRange.start.toISOString())
+          .lte("created_at", filters.dateRange.end.toISOString());
+      }
+
+      if (filters.amountRange) {
+        query = query
+          .gte("amount", filters.amountRange.min)
+          .lte("amount", filters.amountRange.max);
+      }
+
+      // Apply sorting
+      if (sortField === "customer_name") {
+        query = query.order("customers(name)", { ascending: sortOrder === "asc" });
+      } else {
+        query = query.order(sortField, { ascending: sortOrder === "asc" });
       }
 
       const { data, error } = await query;
@@ -52,8 +92,8 @@ export const useInvoices = (user: any, activeTab: string, customerId?: string) =
         const today = new Date();
         const dueDate = new Date(invoice.due_date);
 
-        // If invoice is not paid and due date is in the past, mark as overdue
-        if (invoice.status !== "Paid" && dueDate < today) {
+        // Mark as overdue if due date is in the past, regardless of status
+        if (dueDate < today) {
           return {
             ...invoice,
             status: "Overdue"
@@ -62,14 +102,32 @@ export const useInvoices = (user: any, activeTab: string, customerId?: string) =
         return invoice;
       });
 
-      setInvoices(processedInvoices);
+      // Apply search filter
+      let filteredInvoices = processedInvoices;
+      if (filters.searchQuery) {
+        const searchLower = filters.searchQuery.toLowerCase();
+        filteredInvoices = processedInvoices.filter(invoice =>
+          invoice.invoice_number.toLowerCase().includes(searchLower) ||
+          invoice.customers?.name.toLowerCase().includes(searchLower) ||
+          invoice.amount.toString().includes(searchLower) ||
+          invoice.currency.toLowerCase().includes(searchLower) ||
+          invoice.invoicing_company.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Filter by overdue status if selected
+      if (filters.status === "overdue") {
+        filteredInvoices = filteredInvoices.filter(invoice => invoice.status === "Overdue");
+      }
+
+      setInvoices(filteredInvoices);
     } catch (error) {
       console.error("Error fetching invoices:", error);
       toast.error("Failed to load invoices");
     } finally {
       setIsLoading(false);
     }
-  }, [user, activeTab, customerId]);
+  }, [user, filters, sortField, sortOrder]);
 
   const handleDeleteInvoice = async (invoiceId: string, e: React.MouseEvent) => {
     e.stopPropagation();
