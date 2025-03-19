@@ -20,6 +20,21 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Invoice = Tables<"invoices">;
 
+const invoiceSchema = z.object({
+  customer_id: z.string().min(1, "Customer is required"),
+  category_id: z.string().nullable(),
+  amount: z.number().min(0.01, "Amount must be greater than 0"),
+  currency: z.string().min(1, "Currency is required"),
+  due_date: z.string().min(1, "Due date is required"),
+  issued_date: z.string().min(1, "Issue date is required"),
+  invoice_number: z.string().min(1, "Invoice number is required"),
+  invoicing_company: z.string().nullable(),
+  notes: z.string().nullable(),
+  paid_date: z.string().nullable(),
+  status: z.string().min(1, "Status is required"),
+  user_id: z.string().min(1, "User ID is required"),
+});
+
 export const InvoiceForm = ({
   onSuccess,
   customerId,
@@ -41,14 +56,18 @@ export const InvoiceForm = ({
     isLoadingCategories,
     showPaymentDate,
     watchedStatus
-  } = useInvoiceForm(invoice, customerId, onSuccess);
+  } = useInvoiceForm(invoice, customerId, () => {
+    if (onSuccess && invoice) {
+      onSuccess(invoice);
+    }
+  });
 
   const [selectedCurrency, setSelectedCurrency] = useState(settings?.default_currency || "USD");
   const [formIsLoading, setFormIsLoading] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
 
   const handleCurrencyChange = (currency: string) => {
-    setSelectedCurrency(currency); // Update the selected currency for the invoice
+    setSelectedCurrency(currency);
   };
 
   const onSubmit = async (data: z.infer<typeof invoiceSchema>) => {
@@ -141,7 +160,6 @@ export const InvoiceForm = ({
         <InvoiceAmountFields
           form={form}
           showCurrency={settings?.show_currency || false}
-          enabledCurrencies={settings?.enabled_currencies}
           invoiceCurrency={selectedCurrency}
           onCurrencyChange={handleCurrencyChange}
         />
@@ -160,7 +178,6 @@ export const InvoiceForm = ({
           <InvoiceContractSection
             customerId={customerId}
             onContractAdded={() => {
-              // Optionally refresh the form or show a success message
               toast({
                 title: "Success",
                 description: "Contract added successfully",
