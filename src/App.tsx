@@ -1,4 +1,3 @@
-
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import { RequireAuth } from "./components/RequireAuth";
@@ -12,6 +11,7 @@ import Settings from "./pages/Settings";
 import Categories from "./pages/Categories";
 import { InvoicePDF } from "./components/InvoicePDF";
 import BankReconciliation from "./pages/BankReconciliation";
+import RecurringPayments from "./pages/RecurringPayments";
 import { ThemeProvider } from "next-themes";
 
 const queryClient = new QueryClient();
@@ -31,6 +31,7 @@ function App() {
               <Route path="/customers" element={<RequireAuth><Customers /></RequireAuth>} />
               <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
               <Route path="/bank-reconciliation" element={<RequireAuth><BankReconciliation /></RequireAuth>} />
+              <Route path="/recurring-payments" element={<RequireAuth><RecurringPayments /></RequireAuth>} />
               <Route path="/invoice-pdf/:id" element={<RequireAuth><InvoicePDF /></RequireAuth>} />
             </Routes>
           </AuthProvider>

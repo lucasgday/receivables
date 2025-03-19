@@ -10,7 +10,9 @@ import { InvoiceDateFields } from "./invoice/InvoiceDateFields";
 import { InvoiceStatusField } from "./invoice/InvoiceStatusField";
 import { InvoiceNotesField } from "./invoice/InvoiceNotesField";
 import { InvoiceFormActions } from "./invoice/InvoiceFormActions";
+import { InvoiceContractSection } from "./invoice/InvoiceContractSection";
 import { useState } from "react";
+import { toast } from "@/components/ui/use-toast";
 
 type Invoice = Tables<"invoices">;
 
@@ -99,6 +101,19 @@ export const InvoiceForm = ({
         <InvoiceStatusField form={form} />
 
         <InvoiceNotesField form={form} />
+
+        {customerId && (
+          <InvoiceContractSection
+            customerId={customerId}
+            onContractAdded={() => {
+              // Optionally refresh the form or show a success message
+              toast({
+                title: "Success",
+                description: "Contract added successfully",
+              });
+            }}
+          />
+        )}
 
         <InvoiceFormActions
           invoice={invoice}

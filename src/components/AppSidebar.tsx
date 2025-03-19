@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarHeader,
@@ -16,6 +15,7 @@ import {
   Users,
   Tags,
   Banknote,
+  Repeat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "react-router-dom";
@@ -62,6 +62,20 @@ export function AppSidebar() {
             >
               <FileText className="h-4 w-4" />
               Invoices
+            </NavLink>
+            <NavLink
+              to="/recurring-payments"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "hover:bg-muted text-muted-foreground"
+                )
+              }
+            >
+              <Repeat className="h-4 w-4" />
+              Recurring Payments
             </NavLink>
             <NavLink
               to="/customers"
