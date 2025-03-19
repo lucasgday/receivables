@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -48,7 +47,22 @@ export const useInvoices = (user: any, activeTab: string, customerId?: string) =
 
       if (error) throw error;
 
-      setInvoices(data || []);
+      // Process invoices to determine overdue status
+      const processedInvoices = (data || []).map(invoice => {
+        const today = new Date();
+        const dueDate = new Date(invoice.due_date);
+
+        // If invoice is not paid and due date is in the past, mark as overdue
+        if (invoice.status !== "Paid" && dueDate < today) {
+          return {
+            ...invoice,
+            status: "Overdue"
+          };
+        }
+        return invoice;
+      });
+
+      setInvoices(processedInvoices);
     } catch (error) {
       console.error("Error fetching invoices:", error);
       toast.error("Failed to load invoices");
@@ -59,7 +73,7 @@ export const useInvoices = (user: any, activeTab: string, customerId?: string) =
 
   const handleDeleteInvoice = async (invoiceId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!confirm("Are you sure you want to delete this invoice?")) {
       return;
     }

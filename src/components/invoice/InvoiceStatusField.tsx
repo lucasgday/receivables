@@ -1,4 +1,3 @@
-
 import {
   FormField,
   FormItem,
@@ -38,7 +37,6 @@ export const InvoiceStatusField = ({
             <SelectContent>
               <SelectItem value="Pending">Pending</SelectItem>
               <SelectItem value="Paid">Paid</SelectItem>
-              <SelectItem value="Overdue">Overdue</SelectItem>
             </SelectContent>
           </Select>
           <FormMessage />
