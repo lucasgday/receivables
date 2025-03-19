@@ -44,7 +44,7 @@ export const InvoiceForm = ({
   } = useInvoiceForm(invoice, customerId, onSuccess);
 
   const [selectedCurrency, setSelectedCurrency] = useState(settings?.default_currency || "USD");
-  const [isLoading, setIsLoading] = useState(false);
+  const [formIsLoading, setFormIsLoading] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
 
   const handleCurrencyChange = (currency: string) => {
@@ -53,7 +53,7 @@ export const InvoiceForm = ({
 
   const onSubmit = async (data: z.infer<typeof invoiceSchema>) => {
     if (!user) return;
-    setIsLoading(true);
+    setFormIsLoading(true);
 
     try {
       if (invoice) {
@@ -116,7 +116,7 @@ export const InvoiceForm = ({
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setFormIsLoading(false);
     }
   };
 
@@ -171,7 +171,7 @@ export const InvoiceForm = ({
 
         <InvoiceFormActions
           invoice={invoice}
-          isLoading={isLoading}
+          isLoading={formIsLoading}
           customer={customers.find(c => c.id === form.getValues("customer_id"))}
         />
       </form>
