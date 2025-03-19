@@ -31,6 +31,7 @@ import { Tables } from "@/integrations/supabase/types";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { useSettings } from "@/hooks/useSettings";
 
 const contractSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -62,6 +63,7 @@ export const InvoiceContractSection = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const { settings } = useSettings();
 
   const contractForm = useForm<z.infer<typeof contractSchema>>({
     resolver: zodResolver(contractSchema),
@@ -289,9 +291,11 @@ export const InvoiceContractSection = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
+                        {settings?.enabled_currencies?.map((currency) => (
+                          <SelectItem key={currency} value={currency}>
+                            {currency}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

@@ -30,6 +30,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Tables } from "@/integrations/supabase/types";
+import { useSettings } from "@/hooks/useSettings";
 
 const recurringPaymentSchema = z.object({
   customer_id: z.string().min(1, "Customer is required"),
@@ -55,13 +56,15 @@ export const AddRecurringPaymentDialog = ({
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { settings } = useSettings();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof recurringPaymentSchema>>({
     resolver: zodResolver(recurringPaymentSchema),
     defaultValues: {
+      customer_id: "",
       amount: 0,
-      currency: "USD",
+      currency: settings?.default_currency || "USD",
       frequency: "monthly",
       start_date: new Date().toISOString().split("T")[0],
       is_variable: false,
@@ -186,9 +189,11 @@ export const AddRecurringPaymentDialog = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
+                      {settings?.enabled_currencies?.map((currency) => (
+                        <SelectItem key={currency} value={currency}>
+                          {currency}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

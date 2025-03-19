@@ -24,6 +24,8 @@ interface InvoiceAmountFieldsProps {
   onCurrencyChange: (currency: string) => void;
 }
 
+const DEFAULT_CURRENCIES = ["USD", "EUR", "GBP"];
+
 export const InvoiceAmountFields = ({
   form,
   showCurrency,
@@ -31,10 +33,10 @@ export const InvoiceAmountFields = ({
   onCurrencyChange,
 }: InvoiceAmountFieldsProps) => {
   const { settings, isLoading } = useSettings();
-  const [enabledCurrencies, setEnabledCurrencies] = useState<string[]>([]);
+  const [enabledCurrencies, setEnabledCurrencies] = useState<string[]>(DEFAULT_CURRENCIES);
 
   useEffect(() => {
-    if (settings && settings.enabled_currencies) {
+    if (settings?.enabled_currencies && settings.enabled_currencies.length > 0) {
       setEnabledCurrencies(settings.enabled_currencies);
     }
   }, [settings]);
