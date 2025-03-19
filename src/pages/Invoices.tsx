@@ -14,7 +14,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { InvoiceList } from "@/components/InvoiceList";
 import { InvoiceFilter } from "@/components/InvoiceFilter";
 import { useInvoices, SortField, SortOrder } from "@/hooks/useInvoices";
-import { NewInvoiceSheet } from "@/components/invoice/NewInvoiceSheet";
+import { NewInvoiceSheet } from "@/components/NewInvoiceSheet";
 import { emailService } from "@/services/emailService";
 import { toast } from "sonner";
 import { AddRecurringPaymentDialog } from "@/components/recurring-payments/AddRecurringPaymentDialog";
