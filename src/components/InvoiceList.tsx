@@ -100,7 +100,7 @@ export const InvoiceList = ({
                     <span>•</span>
                     <span>{invoice.categories.name}</span>
                   </>
-                )}
+              )}
               </div>
             </div>
           </div>

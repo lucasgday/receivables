@@ -79,6 +79,8 @@ export const useInvoices = (
       // Apply sorting
       if (sortField === "customer_name") {
         query = query.order("customers(name)", { ascending: sortOrder === "asc" });
+      } else if (sortField === "invoicing_company") {
+        query = query.order("invoicing_company", { ascending: sortOrder === "asc" });
       } else {
         query = query.order(sortField, { ascending: sortOrder === "asc" });
       }
