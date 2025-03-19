@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { FileText, MoreHorizontal, Trash, Edit, FileDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -29,9 +28,9 @@ interface InvoiceListProps {
   refreshInvoices: () => void;
 }
 
-export const InvoiceList = ({ 
-  invoices, 
-  isLoading, 
+export const InvoiceList = ({
+  invoices,
+  isLoading,
   handleDeleteInvoice,
   refreshInvoices
 }: InvoiceListProps) => {
@@ -92,20 +91,32 @@ export const InvoiceList = ({
             <div>
               <h3 className="font-medium">{invoice.invoice_number}</h3>
               <p className="text-sm text-muted-foreground">{invoice.customers?.name || "Unknown customer"}</p>
-              {settings?.show_company && invoice.invoicing_company && (
-                <p className="text-xs text-muted-foreground">From: {invoice.invoicing_company}</p>
-              )}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {invoice.invoicing_company && (
+                  <span>From: {invoice.invoicing_company}</span>
+                )}
+                {invoice.categories?.name && (
+                  <>
+                    <span>•</span>
+                    <span>{invoice.categories.name}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-8">
             <div className="text-right">
               <p className="text-sm font-medium">Amount</p>
               <p className="text-sm text-muted-foreground">
-                {settings?.show_currency 
+                {settings?.show_currency
                   ? formatCurrency(Number(invoice.amount), invoice.currency)
                   : formatCurrency(Number(invoice.amount))
                 }
               </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-medium">Date</p>
+              <p className="text-sm text-muted-foreground">{formatDate(invoice.issued_date)}</p>
             </div>
             <div className="text-right">
               <p className="text-sm font-medium">Due Date</p>
