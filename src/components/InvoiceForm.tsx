@@ -16,7 +16,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/ui/use-toast";
 import { z } from "zod";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 type Invoice = Tables<"invoices">;
 
